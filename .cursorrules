@@ -1,0 +1,19 @@
+You are helping build LUNÉVIA — a luxury AI-powered bridal beauty 
+marketplace for Delhi. 
+
+Stack: Next.js 14 App Router, TypeScript, Tailwind CSS, shadcn/ui, 
+Framer Motion, Supabase, OpenAI API, Gemini API.
+
+Design rules:
+- Always use the LUNÉVIA color tokens from globals.css (--gold, --cream, --blush, --rose)
+- Display text uses font-cormorant class, UI text uses font-dm-sans
+- Animations use Framer Motion with duration 0.4s ease-in-out
+- Cards always have: rounded-2xl, border border-gold/20, shadow-warm
+- Never use generic blue/purple color schemes
+- Always write TypeScript with proper types, no 'any'
+- API routes go in /app/api/, never call AI APIs from client components
+
+Component rules:
+- shadcn components are the base — always reskin with LUNÉVIA tokens
+- Skeleton loaders on every async data fetch
+- Mobile-first: design at 375px, enhance for desktop
