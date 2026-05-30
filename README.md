@@ -18,7 +18,238 @@ LUNEVIA helps users discover the perfect bridal hairstyle by:
 - **Responsive UI**: Beautiful, modern interface built with React, Tailwind CSS, and Framer Motion
 - **Real-time Analysis**: Instant face detection and measurement extraction
 
-## 🛠️ Tech Stack
+## 🎨 Pages & Features Overview
+
+### 1. **Home Page** (`/`)
+The landing page introducing LUNEVIA with:
+- **Hero Section**: Stunning banner with call-to-action
+- **How It Works**: Step-by-step explanation of the face analysis process
+- **Featured Artists Section**: Showcase of top bridal stylists and artists
+- **Stats Bar**: Display of platform statistics (users, recommendations, etc.)
+- **Testimonials Section**: Real user reviews and success stories
+- **Ornamental Dividers**: Beautiful design elements separating sections
+- **Concierge Banner**: Promotion of AI assistant features
+
+### 2. **AI Match / Hairstyle Analyzer** (`/hairstyle`)
+The core feature of LUNEVIA:
+- **Face Photo Upload**: Accept JPG, PNG, WebP formats
+- **Real-time Face Detection**: MediaPipe analyzes 468 facial landmarks
+- **Measurement Extraction**: Calculates face length, jaw width, forehead width, cheekbone width
+- **AI Classification**: Gemini classifies face shape (8 types)
+- **Hairstyle Recommendations**: 3 personalized bridal hairstyles with:
+  - Style name
+  - Detailed description
+  - Why it works for the detected face shape
+  - Best occasions to wear it
+- **Debug Information**: Toggle to view extracted measurements for transparency
+- **Confidence Indicator**: Shows classification confidence level (High/Medium/Low)
+
+**Key Components:**
+- `HairstyleAnalyzer.tsx`: Main UI component
+- `lib/faceMesh.ts`: Face detection engine
+- `/api/ai/hairstyle`: Backend recommendation API
+
+### 3. **Explore Page** (`/explore`)
+Browse and discover bridal hairstyles:
+- **Hairstyle Gallery**: Browse all available hairstyle recommendations
+- **Filter Options**: Filter by:
+  - Face shape (Oval, Round, Square, etc.)
+  - Occasion (Day wedding, Evening reception, etc.)
+  - Style type
+  - Complexity level
+- **Salon Finder**: Discover salons specializing in each style
+- **Detailed Style Pages**: View hairstyle details, requirements, and similar styles
+- **Recommendation Cards**: Beautiful cards showing hairstyle images and descriptions
+
+**Component:** `ExplorePage.tsx`
+
+### 4. **LUNEVIA Concierge AI** (Global Widget + `/concierge`)
+Intelligent AI assistant available throughout the app:
+- **Chat Interface**: Ask questions about hairstyles, face shapes, and weddings
+- **Styling Tips**: Get personalized styling advice
+- **FAQs**: Common questions answered by AI
+- **Booking Assistance**: Help finding and booking stylists
+- **Real-time Responses**: Powered by Google Gemini
+- **Context-Aware**: Remembers your face shape and preferences
+
+**Features:**
+- Always available widget in bottom corner
+- Full-page chat interface for detailed consultations
+- Typing indicators and loading states
+- Message history within session
+- Smooth animations with Framer Motion
+
+**Component:** `ConciergeWidget.tsx`  
+**API:** `/api/ai/concierge`
+
+### 5. **Artist/Salon Directory** (`/explore` - detailed view)
+Discover professional bridal stylists:
+- **Artist Profiles**: View artist bios, specialties, and portfolios
+- **Salon Listings**: Browse all partner salons
+- **Ratings & Reviews**: Community ratings and reviews
+- **Specializations**: Filter by expertise (updos, curls, straight styles, etc.)
+- **Experience Level**: View years of experience and certifications
+- **Service Offerings**: Bridal consultations, trial runs, on-location services
+
+**Component:** `FeaturedArtistsSection.tsx`  
+**Data:** `lib/data/salons.ts`
+
+### 6. **Salon Detail Page** (`/salon/[slug]`)
+Comprehensive salon information:
+- **Salon Overview**: Name, location, contact information
+- **Services Menu**: All offered services with pricing
+- **Artists**: List of stylists available at the salon
+- **Portfolio**: Photo gallery of previous work
+- **Customer Reviews**: Ratings and testimonials
+- **Booking Button**: Direct link to book appointments
+- **Business Hours**: Operating hours and availability
+- **Contact Info**: Phone, email, website links
+
+**Component:** `SalonDetailPage.tsx`  
+**Data Source:** `lib/data/salons.ts`
+
+### 7. **Booking Page** (`/book/[slug]`)
+Complete booking management system:
+- **Booking Flow**: Step-by-step booking process
+- **Service Selection**: Choose hairstyle or package
+- **Date/Time Selection**: Pick available booking slots
+- **Stylist Selection**: Choose preferred artist
+- **Trial Run Options**: Schedule pre-wedding trial
+- **Special Requirements**: Add notes and preferences
+- **Payment Integration**: Secure booking confirmation
+- **Booking Confirmation**: Confirmation details and calendar invite
+
+**Component:** `BookingFlow.tsx`
+
+### 8. **Navigation & Layout**
+- **Navbar**: Top navigation with:
+  - Logo and branding
+  - Main navigation links (Explore, AI Match, How it Works)
+  - Booking button
+  - User menu
+  
+- **Footer**: 
+  - Quick links
+  - Contact information
+  - Social media links
+  - Newsletter signup
+  - Privacy and terms links
+
+**Components:** `Navbar.tsx`, `Footer.tsx`
+
+### 9. **UI Components Library**
+Reusable components used throughout:
+- **LuneviaButton**: Custom styled buttons with hover effects
+- **Badge**: Labels for face shapes, occasions, and tags
+- **SalonCard**: Card component for salon listings
+- **PageWrapper**: Consistent page layout wrapper
+
+## � User Journey & Workflows
+
+### Typical User Flow:
+
+1. **Discovery** → User lands on home page (`/`)
+2. **Learning** → Views "How It Works" section with step-by-step guide
+3. **Consultation** → Optional: Chats with LUNEVIA Concierge for questions
+4. **Face Analysis** → Navigates to `/hairstyle` and uploads photo
+5. **Results** → Sees AI-detected face shape and 3 hairstyle recommendations
+6. **Exploration** → Visits `/explore` to see more styles and artists
+7. **Artist Discovery** → Browses salon and artist profiles
+8. **Booking** → Selects a salon/artist and proceeds to `/book`
+9. **Confirmation** → Completes booking with calendar invite
+
+### Feature Integration Points:
+
+- **Concierge AI**: Available on all pages as floating widget
+- **Hairstyle Recommendations**: Links directly from analyzer to booking
+- **Salon Discovery**: Featured artists section links to full salon profiles
+- **Cross-Navigation**: Easy navigation between related features
+
+## 🔗 Navigation Map
+
+```
+Home (/)
+├── How It Works
+├── Featured Artists (links to /salon/[slug])
+├── Testimonials
+└── CTA Buttons → /hairstyle
+
+Hairstyle Analyzer (/hairstyle)
+├── Upload Photo
+├── Face Analysis Results
+├── Recommendation Cards
+└── "Book This Style" → /salon/[slug]
+
+Explore (/explore)
+├── Browse All Hairstyles
+├── Filter by Face Shape, Occasion
+├── Artist Directory
+└── Salon Cards (links to /salon/[slug])
+
+Salon Details (/salon/[slug])
+├── Salon Info & Reviews
+├── Artist Profiles
+├── Portfolio Gallery
+└── "Book Appointment" → /book/[slug]
+
+Booking (/book/[slug])
+├── Service Selection
+├── Date/Time Selection
+├── Stylist Selection
+└── Confirmation
+
+Concierge (Global)
+├── Available on all pages
+├── Floating widget
+└── Full chat page (optional)
+```
+## 🎨 Design System & Styling
+
+### Color Palette
+- **Primary Gold**: `#D4AF37` - Luxurious bridal theme
+- **Primary Charcoal**: `#1A1A1A` - Professional, elegant text
+- **Blush Rose**: `#FFF0F5` - Soft, feminine accents
+- **White**: `#FFFFFF` - Clean backgrounds
+- **Warm Shadows**: Soft drop shadows for depth
+
+### Typography
+- **Headings**: Cormorant (serif) - Elegant, luxurious feel
+- **Body**: DM Sans (sans-serif) - Clean, modern, readable
+- **Font Sizes**: Responsive scaling from mobile to desktop
+
+### Components Styling
+- **Buttons**: 
+  - Gold background with hover animations
+  - Smooth transitions (400ms)
+  - Disabled states for better UX
+  
+- **Cards**:
+  - Soft shadows (warm drop shadows)
+  - Border: 1px solid gold/20
+  - Rounded corners (rounded-2xl)
+  
+- **Inputs**:
+  - Clean borders with focus states
+  - Placeholder text in lighter color
+  - Smooth transitions
+
+### Animations
+- **Framer Motion** used throughout:
+  - Page transitions (fade-in-up)
+  - Card hovers and clicks
+  - Loading spinners
+  - Modal animations
+  - Recommendation cards stagger animation
+
+### Responsive Design
+- **Mobile-First**: Optimized for mobile screens first
+- **Breakpoints**: 
+  - `sm`: 640px
+  - `md`: 768px
+  - `lg`: 1024px
+  - `xl`: 1280px
+- **Touch-Friendly**: Large buttons and tap targets on mobile
+## �🛠️ Tech Stack
 
 - **Frontend**: Next.js 14.2.35, React 19, TypeScript, Tailwind CSS
 - **AI/ML**: 
