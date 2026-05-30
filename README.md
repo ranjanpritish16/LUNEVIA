@@ -537,18 +537,6 @@ Analyzes facial measurements and returns hairstyle recommendations.
 
 Lists available Gemini models for discovery.
 
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit pull requests or open issues.
-
-## 📄 License
-
-This project is open source and available under the MIT License.
-
-## 📧 Support
-
-For questions or issues, please create an issue on GitHub or contact the development team.
-
 ## 🎨 Design Philosophy
 
 LUNEVIA is designed with a focus on:
@@ -567,12 +555,6 @@ LUNEVIA is designed with a focus on:
 - [ ] Advanced styling tips per face shape
 - [ ] Makeup recommendations
 
-## 📞 Contact
-
-**Project**: LUNEVIA - AI Bridal Hairstyle Assistant  
-**Repository**: https://github.com/ranjanpritish16/LUNEVIA  
-**Version**: 1.0.0  
-**Last Updated**: May 2026
 
 ---
 
