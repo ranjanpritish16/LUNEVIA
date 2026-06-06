@@ -11,7 +11,7 @@ const aiFeatureLinks = [
   { href: "/concierge", label: "LUNÉVIA Concierge" },
   { href: "/hairstyle", label: "Hairstyle Analyzer" },
   { href: "/package-builder", label: "Package Builder" },
-  { href: "/concierge", label: "Bridal Timeline" },
+  { href: "/timeline", label: "Bridal Timeline" },
 ];
 
 const companyLinks = [

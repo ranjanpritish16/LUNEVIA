@@ -14,6 +14,7 @@ import { supabase } from "@/lib/supabase";
 const navLinks = [
   { href: "/explore", label: "Explore" },
   { href: "/concierge", label: "AI Match" },
+  { href: "/timeline", label: "Timeline" },
   { href: "/#how-it-works", label: "How it Works" },
 ];
 
