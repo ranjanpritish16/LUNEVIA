@@ -35,7 +35,6 @@ export default function RootLayout({
     <html lang="en" className={`${cormorant.variable} ${dmSans.variable}`}>
       <body className="bg-cream">
         <ClientShell>{children}</ClientShell>
-        <Footer />
       </body>
     </html>
   );

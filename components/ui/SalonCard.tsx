@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Heart } from "lucide-react"; // Wait, I should use lucide-react or custom SVG. Let's use custom SVG to avoid dependency issues if lucide-react isn't installed.
+
 
 import { Badge } from "@/components/ui/Badge";
 import { cn } from "@/lib/utils";

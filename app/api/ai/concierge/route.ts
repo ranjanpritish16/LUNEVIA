@@ -5,14 +5,19 @@ import {
   getSalonContextForConcierge,
   getSalonSlugById,
 } from "@/lib/data/salons";
-import { getOpenAIClient } from "@/lib/openai";
+import { getGeminiModel } from "@/lib/gemini";
 import type {
   ConciergeApiResponse,
   ConciergeRecommendation,
 } from "@/lib/types/concierge";
 
+export interface ChatMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
 interface ConciergeRequestBody {
-  userMessage?: string;
+  messages: ChatMessage[];
 }
 
 interface RawRecommendation {
@@ -24,26 +29,53 @@ interface RawRecommendation {
 }
 
 interface RawConciergeResponse {
+  type?: "recommendations" | "text";
   message?: string;
   recommendations?: RawRecommendation[];
+  salons?: RawRecommendation[];
 }
 
 function buildSystemPrompt(salonJson: string): string {
-  return `You are LUNÉVIA Concierge, a luxury bridal beauty consultant for Delhi weddings. You have access to this salon database: ${salonJson}. Based on the bride's message, recommend exactly 3 salons. Respond ONLY with valid JSON in this format:
-{
-  "message": "string (warm 1-sentence intro)",
-  "recommendations": [
-    {
-      "salonId": "string",
-      "salonName": "string",
-      "matchScore": 85-99,
-      "reasoning": "string (2 sentences, specific and warm)",
-      "specialNote": "string (1 sentence tip)"
-    }
-  ]
-}
+  return `You are LUNÉVIA Concierge — a warm, knowledgeable luxury bridal beauty consultant for Delhi weddings. You speak like a trusted friend who happens to know every great makeup artist in the city.
 
-Always be warm, confident, and specific. Never be generic. Only recommend salons from the provided database using their exact id and name. Respond in the same language the user writes in.`;
+You have access to this curated list of verified salons: ${salonJson}.
+
+RESPONSE RULES — follow strictly:
+
+1. When the bride is asking for salon/artist recommendations (keywords: find, recommend, best, who does, looking for, budget, location, complexion, makeup, hair, mehendi, airbrush, etc.):
+   Return ONLY this JSON:
+   {
+     "type": "recommendations",
+     "message": "warm personalised 1-2 sentence intro referencing her specific requirements",
+     "salons": [
+       {
+         "salonId": "exact id from database",
+         "name": "exact name from database",
+         "matchScore": 88,
+         "reasoning": "2 warm specific sentences referencing HER budget/location/complexion",
+         "specialNote": "1 insider tip only this artist's clients know"
+       }
+     ]
+   }
+   Recommend 1–3 salons. Only use salons from the database with their exact id and name.
+
+2. For general questions (planning advice, what to expect, timeline questions, etc.):
+   Return ONLY this JSON:
+   {
+     "type": "text",
+     "message": "your warm helpful conversational response, 2-4 sentences max"
+   }
+
+3. For greetings or when you need more info to recommend:
+   Return ONLY this JSON:
+   {
+     "type": "text",
+     "message": "warm greeting or clarifying question to understand her needs better"
+   }
+
+PERSONALITY: Warm, specific, confident. Never generic. Always use the bride's exact details (budget, complexion, location, style) in your reasoning. Address her directly. Keep responses concise — this is a chat, not an essay.
+
+Respond in the same language the user writes in (Hindi or English).`;
 }
 
 function enrichRecommendations(
@@ -60,7 +92,7 @@ function enrichRecommendations(
       salonId,
       salonName: rec.salonName ?? "Recommended Artist",
       slug,
-      matchScore: Math.min(99, Math.max(85, rec.matchScore ?? 90)),
+      matchScore: Math.min(99, Math.max(80, rec.matchScore ?? 90)),
       reasoning: rec.reasoning ?? "",
       specialNote: rec.specialNote ?? "",
     };
@@ -70,33 +102,52 @@ function enrichRecommendations(
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as ConciergeRequestBody;
-    const userMessage = body.userMessage?.trim();
+    const { messages } = body;
 
-    if (!userMessage) {
+    if (!messages || messages.length === 0) {
       return NextResponse.json(
-        { error: "userMessage is required" },
+        { error: "messages array is required" },
         { status: 400 }
       );
     }
 
+    // Build system prompt with salon database
     const salonContext = getSalonContextForConcierge();
     const salonJson = JSON.stringify(salonContext);
     const systemPrompt = buildSystemPrompt(salonJson);
 
-    const openai = getOpenAIClient();
+    // Build a single prompt string (compatible with v1 SDK)
+    const conversationText = messages
+      .map((m) => `${m.role === "assistant" ? "CONCIERGE" : "BRIDE"}: ${m.content}`)
+      .join("\n\n");
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userMessage },
-      ],
-      temperature: 0.7,
-    });
+    const fullPrompt = `${systemPrompt}\n\n--- CONVERSATION START ---\n\n${conversationText}\n\nCONCIERGE:`;
 
-    const content = completion.choices[0]?.message?.content;
+    // Try primary model, fall back to stable gemini-1.5-flash on 503
+    const MODEL_CHAIN = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-1.5-flash-latest"];
+    let result;
+    let lastError: unknown;
+    for (const modelName of MODEL_CHAIN) {
+      try {
+        const model = getGeminiModel(modelName);
+        result = await model.generateContent([{ text: fullPrompt }]);
+        break; // success — stop retrying
+      } catch (err: any) {
+        lastError = err;
+        console.warn(`[concierge] ${modelName} failed: ${err.message}`);
+      }
+    }
 
+    if (!result) {
+      console.error("[concierge] All models failed:", lastError);
+      return NextResponse.json(
+        { error: "LUNÉVIA Concierge is temporarily unavailable. Please try again in a moment." },
+        { status: 503 }
+      );
+    }
+
+
+    let content = result.response.text();
     if (!content) {
       return NextResponse.json(
         { error: "No response from LUNÉVIA Concierge" },
@@ -104,16 +155,28 @@ export async function POST(request: Request) {
       );
     }
 
+    // Strip markdown formatting if the model returned any
+    content = content.replace(/```json\n?|\n?```/g, "").trim();
+
     const parsed = JSON.parse(content) as RawConciergeResponse;
 
-    const response: ConciergeApiResponse = {
-      message:
-        parsed.message ??
-        "I've found three artists who would be perfect for your vision.",
-      recommendations: enrichRecommendations(parsed.recommendations ?? []),
-    };
+    // Handle both "recommendations" type and "text" type
+    if (parsed.type === "recommendations" || parsed.recommendations || parsed.salons) {
+      const rawSalons = parsed.salons ?? parsed.recommendations ?? [];
+      const response: ConciergeApiResponse = {
+        message:
+          parsed.message ??
+          "Here are my top picks for you:",
+        recommendations: enrichRecommendations(rawSalons),
+      };
+      return NextResponse.json({ type: "recommendations", ...response });
+    }
 
-    return NextResponse.json(response);
+    // Text response
+    return NextResponse.json({
+      type: "text",
+      message: parsed.message ?? "I'm here to help! Tell me more about your vision.",
+    });
   } catch (error) {
     console.error("[concierge]", error);
     return NextResponse.json(
