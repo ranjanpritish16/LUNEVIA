@@ -2,11 +2,14 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import type { User } from "@supabase/supabase-js";
 
 import { LuneviaButton } from "@/components/ui/LuneviaButton";
 import { useScrollY } from "@/hooks/useScrollY";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/lib/supabase";
 
 const navLinks = [
   { href: "/explore", label: "Explore" },
@@ -42,11 +45,11 @@ function MenuIcon({ open }: { open: boolean }) {
   );
 }
 
-function UserAvatar() {
+function UserAvatar({ onClick }: { onClick?: () => void }) {
   return (
-    <Link
-      href="/profile"
-      aria-label="Sign in"
+    <button
+      onClick={onClick}
+      aria-label="Profile"
       className="flex h-9 w-9 items-center justify-center rounded-full border border-gold/30 bg-blush text-gold transition-colors duration-[400ms] ease-in-out hover:border-gold/60 hover:bg-blush/80"
     >
       <svg
@@ -61,13 +64,37 @@ function UserAvatar() {
         <circle cx="12" cy="8" r="4" />
         <path d="M5 20c0-3.866 3.134-7 7-7s7 3.134 7 7" />
       </svg>
-    </Link>
+    </button>
   );
 }
 
 export function Navbar() {
   const { scrolled } = useScrollY(50);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleProfileClick = () => {
+    if (user) {
+      router.push("/profile");
+    } else {
+      router.push("/login");
+    }
+  };
 
   return (
     <header
@@ -100,8 +127,10 @@ export function Navbar() {
         </ul>
 
         <div className="hidden items-center gap-3 md:flex">
-          <LuneviaButton size="sm">Book Now</LuneviaButton>
-          <UserAvatar />
+          <Link href="/explore">
+            <LuneviaButton size="sm">Book Now</LuneviaButton>
+          </Link>
+          <UserAvatar onClick={handleProfileClick} />
         </div>
 
         <button
@@ -136,10 +165,15 @@ export function Navbar() {
                 </Link>
               ))}
               <div className="flex items-center gap-3 pt-3">
-                <LuneviaButton size="sm" className="flex-1">
-                  Book Now
-                </LuneviaButton>
-                <UserAvatar />
+                <Link href="/explore" className="flex-1">
+                  <LuneviaButton size="sm" className="w-full">
+                    Book Now
+                  </LuneviaButton>
+                </Link>
+                <UserAvatar onClick={() => {
+                  handleProfileClick();
+                  setMobileOpen(false);
+                }} />
               </div>
             </div>
           </motion.div>

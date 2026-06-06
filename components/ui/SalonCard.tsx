@@ -3,9 +3,13 @@
 import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { Heart } from "lucide-react"; // Wait, I should use lucide-react or custom SVG. Let's use custom SVG to avoid dependency issues if lucide-react isn't installed.
 
 import { Badge } from "@/components/ui/Badge";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/lib/supabase";
 
 export type PriceRange = "₹" | "₹₹" | "₹₹₹";
 
@@ -24,6 +28,7 @@ export interface SalonCardProps {
 }
 
 export function SalonCard({
+  id,
   name,
   location,
   specialty,
@@ -35,6 +40,68 @@ export function SalonCard({
   slug,
   className,
 }: SalonCardProps) {
+  const [isSaved, setIsSaved] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    async function checkSavedStatus() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      
+      const { data } = await supabase
+        .from('profiles')
+        .select('saved_salons')
+        .eq('id', session.user.id)
+        .single();
+        
+      if (data && data.saved_salons?.includes(id)) {
+        setIsSaved(true);
+      }
+    }
+    checkSavedStatus();
+  }, [id]);
+
+  const router = useRouter();
+
+  const toggleSave = async (e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent link navigation
+    
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      router.push('/login');
+      return;
+    }
+
+    setIsLoading(true);
+    
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('saved_salons')
+        .eq('id', session.user.id)
+        .single();
+        
+      let currentSaved = profile?.saved_salons || [];
+      
+      if (isSaved) {
+        currentSaved = currentSaved.filter((salonId: string) => salonId !== id);
+      } else {
+        currentSaved = [...currentSaved, id];
+      }
+      
+      await supabase
+        .from('profiles')
+        .update({ saved_salons: currentSaved })
+        .eq('id', session.user.id);
+        
+      setIsSaved(!isSaved);
+    } catch (error) {
+      console.error("Error saving salon:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <motion.article
       whileHover={{ y: -4 }}
@@ -59,6 +126,23 @@ export function SalonCard({
             className="absolute inset-0 bg-gradient-to-t from-primary/70 via-primary/20 to-transparent"
             aria-hidden="true"
           />
+          
+          <div className="absolute left-3 top-3 z-10">
+            <button
+              onClick={toggleSave}
+              disabled={isLoading}
+              className={cn(
+                "flex h-8 w-8 items-center justify-center rounded-full backdrop-blur-md transition-all duration-300",
+                isSaved ? "bg-rose/90 text-cream" : "bg-charcoal/30 text-cream hover:bg-rose/80"
+              )}
+              aria-label={isSaved ? "Remove from wishlist" : "Save to wishlist"}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill={isSaved ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+              </svg>
+            </button>
+          </div>
+
           {verified && (
             <div className="absolute right-3 top-3">
               <Badge variant="verified">Verified</Badge>

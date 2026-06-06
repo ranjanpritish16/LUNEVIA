@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { HairstyleAnalyzer } from "@/components/hairstyle/HairstyleAnalyzer";
+import { AuthGuard } from "@/components/auth/AuthGuard";
 
 export const metadata: Metadata = {
   title: "AI Hairstyle Analyzer — LUNÉVIA",
@@ -10,8 +11,10 @@ export const metadata: Metadata = {
 
 export default function HairstylePage() {
   return (
-    <main className="min-h-screen bg-cream">
-      <HairstyleAnalyzer />
-    </main>
+    <AuthGuard>
+      <main className="min-h-screen bg-cream">
+        <HairstyleAnalyzer />
+      </main>
+    </AuthGuard>
   );
 }

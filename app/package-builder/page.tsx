@@ -8,6 +8,7 @@ import { useState, useMemo } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { LuneviaButton } from "@/components/ui/LuneviaButton";
 import { cn } from "@/lib/utils";
+import { AuthGuard } from "@/components/auth/AuthGuard";
 import type {
   Aesthetic,
   BudgetRange,
@@ -578,34 +579,37 @@ export default function PackageBuilderPage() {
 
   if (step === 6 && generatedPackage) {
     return (
-      <div className="relative mx-auto max-w-5xl px-4 pb-16 pt-24 md:px-6 md:pt-28">
-        <Link
-          href="/"
-          className="font-dm-sans text-sm text-gold transition-colors hover:text-gold/80"
-        >
-          ← Back to Home
-        </Link>
+      <AuthGuard>
+        <div className="relative mx-auto max-w-5xl px-4 pb-16 pt-24 md:px-6 md:pt-28">
+          <Link
+            href="/"
+            className="font-dm-sans text-sm text-gold transition-colors hover:text-gold/80"
+          >
+            ← Back to Home
+          </Link>
 
-        <ResultsPage
-          package={generatedPackage}
-          onStartOver={() => {
-            setStep(1);
-            setWeddingDate("");
-            setBudgetRange(null);
-            setSelectedServices(new Set());
-            setAesthetic(null);
-            setSkinTone(null);
-            setSpecialNotes("");
-            setGeneratedPackage(null);
-            setError(null);
-          }}
-        />
-      </div>
+          <ResultsPage
+            package={generatedPackage}
+            onStartOver={() => {
+              setStep(1);
+              setWeddingDate("");
+              setBudgetRange(null);
+              setSelectedServices(new Set());
+              setAesthetic(null);
+              setSkinTone(null);
+              setSpecialNotes("");
+              setGeneratedPackage(null);
+              setError(null);
+            }}
+          />
+        </div>
+      </AuthGuard>
     );
   }
 
   return (
-    <div className="relative mx-auto max-w-4xl px-4 pb-16 pt-24 md:px-6 md:pt-28">
+    <AuthGuard>
+      <div className="relative mx-auto max-w-4xl px-4 pb-16 pt-24 md:px-6 md:pt-28">
       <div className="mb-6">
         <Link
           href="/"
@@ -1001,5 +1005,6 @@ export default function PackageBuilderPage() {
         )}
       </AnimatePresence>
     </div>
+  </AuthGuard>
   );
 }

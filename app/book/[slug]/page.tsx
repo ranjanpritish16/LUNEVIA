@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { BookingFlow } from "@/components/booking/BookingFlow";
 import { getSalonBySlug } from "@/lib/data/salons";
+import { AuthGuard } from "@/components/auth/AuthGuard";
 
 interface BookPageProps {
   params: { slug: string };
@@ -25,8 +26,10 @@ export default function BookPage({ params }: BookPageProps) {
   }
 
   return (
-    <main className="min-h-screen bg-cream">
-      <BookingFlow salon={salon} />
-    </main>
+    <AuthGuard>
+      <main className="min-h-screen bg-cream">
+        <BookingFlow salon={salon} />
+      </main>
+    </AuthGuard>
   );
 }
