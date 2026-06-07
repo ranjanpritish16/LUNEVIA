@@ -24,7 +24,7 @@ export default function ContactPage() {
 
                 <div className="space-y-4">
                     {[
-                        { label: "Email", value: "[EMAIL_ADDRESS]", icon: "✉️" },
+                        { label: "Email", value: "hello.luneviaa@gmail.com", icon: "✉️" },
                         { label: "Instagram", value: "@lunevia.in", icon: "📸" },
                         { label: "WhatsApp", value: "+91 7903912585", icon: "💬" },
                         { label: "Location", value: "Delhi, India", icon: "📍" },

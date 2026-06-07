@@ -39,7 +39,8 @@ const sections = [
     {
         title: "Contact",
         content:
-            "Questions about these terms? Write to us at hello@lunevia.in.",
+            "Questions about these terms? Write to us at hello.luneviaa@gmail.com",
+
     },
 ];
 
