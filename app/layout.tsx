@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Cormorant_Garamond, DM_Sans } from "next/font/google";
 
-import { Footer } from "@/components/layout/Footer";
 import { ClientShell } from "@/components/providers/ClientShell";
 
 import "./globals.css";

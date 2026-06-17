@@ -21,12 +21,22 @@ interface ClientShellProps {
 
 export function ClientShell({ children }: ClientShellProps) {
   const pathname = usePathname();
-  const isConcierge = pathname === "/concierge";
 
+  // Artist routes have their own layout (app/artist/layout.tsx) that renders
+  // ArtistTopBar instead. Never show customer chrome (Navbar/Footer/Concierge)
+  // on any /artist/* path.
+  const isArtistRoute = pathname.startsWith("/artist");
+  if (isArtistRoute) {
+    return <>{children}</>;
+  }
+
+  // The full-page Concierge has its own chrome; skip Navbar/Footer there too.
+  const isConcierge = pathname === "/concierge";
   if (isConcierge) {
     return <PageWrapper>{children}</PageWrapper>;
   }
 
+  // All customer-facing routes: render full customer chrome.
   return (
     <>
       <Navbar />

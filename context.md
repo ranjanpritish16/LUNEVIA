@@ -711,7 +711,7 @@ Delhi's premier AI-powered bridal beauty marketplace.
 ![LUNÉVIA Hero](./public/og-image.png)
 
 ## Live Demo
-🌐 [lunevia.vercel.app](https://lunevia.vercel.app)
+🌐 [luneviaa.vercel.app](https://luneviaa.vercel.app)
 
 ## What is LUNÉVIA?
 LUNÉVIA is a luxury bridal beauty platform built for Delhi brides.
@@ -761,3 +761,263 @@ AI Startup Buildathon 2026 — SuperXgen AI Builder Series
 
 *LUNÉVIA — Built at IIT Mandi. Submitted for AI Startup Buildathon 2026.*
 *"Your most beautiful day, designed by AI."*
+
+
+
+# LUNÉVIAA — Artist/Salon Side Context
+
+## Overview
+
+LUNÉVIAA is a two-sided marketplace. The customer side lets brides discover, compare, and book bridal artists. The artist/salon side is the mirror image — every piece of information a customer sees must originate from an artist-controlled dashboard. Nothing on the public-facing salon pages should be hardcoded or admin-only; the artist owns and edits their own presence on the platform.
+
+---
+
+## Feature Mapping — Customer View → Artist Control
+
+| Customer Sees | Artist Controls | Dashboard Page |
+|---|---|---|
+| Salon name, description, photos | Profile editor — edit all info | `/artist/dashboard/profile` |
+| Services & pricing | Service menu manager — add/edit/delete | `/artist/dashboard/services` |
+| Portfolio gallery | Photo uploader — upload, reorder, delete | `/artist/dashboard/portfolio` |
+| Availability calendar | Set working hours, block dates | `/artist/dashboard/availability` |
+| Reviews & ratings | Read reviews, flag inappropriate ones | `/artist/dashboard/reviews` |
+| Verified badge | Verification status (admin-approved) | Read-only on profile |
+| Booking confirmation | Accept/decline/reschedule requests | `/artist/dashboard/bookings` |
+| Team members shown | Add team members with roles | `/artist/dashboard/profile` |
+| Location on map | Set address, service area | `/artist/dashboard/profile` |
+| Specialty tags | Choose specialties | `/artist/dashboard/profile` |
+
+---
+
+## Artist-Side Routes
+
+```
+app/
+├── artist/
+│   ├── login/page.tsx              # Separate artist login/signup
+│   ├── onboarding/page.tsx         # First-time 4-step setup wizard
+│   └── dashboard/
+│       ├── page.tsx                # Home — stats overview
+│       ├── profile/page.tsx        # Edit salon profile
+│       ├── services/page.tsx       # Manage service menu
+│       ├── portfolio/page.tsx      # Upload/manage portfolio photos
+│       ├── availability/page.tsx   # Working hours + blocked dates
+│       ├── bookings/page.tsx       # Booking inbox
+│       └── reviews/page.tsx        # View reviews (read-only)
+└── api/
+    ├── bookings/route.ts           # POST — create booking (called by customer)
+    ├── bookings/[id]/route.ts      # PATCH — accept/decline (called by artist)
+    └── salons/[id]/route.ts        # GET/PATCH — fetch or update salon
+```
+
+---
+
+## Authentication & Role Separation
+
+Artists and customers share the same Supabase Auth system but are distinguished by a `role` field on the `profiles` table.
+
+- `role: 'customer'` → redirected to `/profile` after login
+- `role: 'artist'` → redirected to `/artist/dashboard` after login
+
+**Artist signup flow:**
+
+1. Artist signs up at `/artist/login` (separate page from customer login)
+2. On signup, `role` is set to `'artist'` in the profiles table
+3. Redirected to `/artist/onboarding` — a 4-step wizard
+4. On completion, a new row is created in the `salons` table with `owner_id` set to the artist's user ID and `is_published: false`
+5. Artist manually toggles `is_published: true` from their profile editor when ready to go live
+
+---
+
+## Page-by-Page Detail
+
+### 1. Artist Login (`/artist/login`)
+
+A login/signup page visually distinct from the customer `/login` page — same brand system but framed as "Join LUNÉVIAA as an Artist" rather than "Welcome back, bride."
+
+- Email + password signup/signin via Supabase Auth
+- "New artist? Apply to join LUNÉVIAA" toggle
+- On successful signup: set `role: 'artist'`, redirect to `/artist/onboarding`
+- On successful signin: check `role`, redirect to `/artist/dashboard`
+
+---
+
+### 2. Artist Onboarding (`/artist/onboarding`)
+
+A 4-step wizard with Framer Motion transitions between steps (same animation style as the rest of the app: fade + y:20→0, 400ms).
+
+**Step 1 — Basic Info**
+- Salon/studio name
+- Locality (dropdown of real Delhi areas: Lajpat Nagar, Hauz Khas, Punjabi Bagh, South Ex, Greater Kailash, etc.)
+- Specialty tags (multi-select: Bridal Makeup, Mehendi, Hair Styling, Pre-Bridal Packages)
+- Short description (textarea, ~150 word limit)
+
+**Step 2 — Contact & Location**
+- Phone number
+- Instagram handle
+- WhatsApp number
+- Full address (text input, used for the map embed later)
+
+**Step 3 — Services**
+- Must add at least 1 service before proceeding
+- Each service: name, duration, price, category tag
+- "Add another service" button to add more inline
+
+**Step 4 — Cover Photo**
+- Upload a cover image (drag-drop or file picker → Supabase Storage)
+- This becomes the hero image on their public salon detail page
+
+On final submission: a new `salons` row is created with all collected data, `is_published: false` by default. Artist lands on `/artist/dashboard` with a banner: "Your profile is saved as a draft. Publish it when you're ready."
+
+---
+
+### 3. Dashboard Home (`/artist/dashboard`)
+
+The artist's command center.
+
+**Stats overview cards** (4-card grid):
+- Total bookings this month
+- Pending bookings (highlighted/badged if count > 0 — this should visually demand attention)
+- Average rating (pulled from reviews table)
+- Profile views (can be a simple incrementing counter, doesn't need to be perfectly accurate for hackathon purposes)
+
+**Quick action buttons:**
+- "View Pending Bookings" → links to bookings page filtered to pending
+- "Add New Service" → links to services page
+- "Upload Portfolio Photos" → links to portfolio page
+
+**Recent activity table:** last 5 bookings with customer name, service, date, status
+
+**Publish status banner:** if `is_published: false`, show a persistent banner: "Your profile is not visible to customers yet. [Publish Now]" linking to the profile editor.
+
+---
+
+### 4. Profile Editor (`/artist/dashboard/profile`)
+
+The single source of truth for everything shown on the public `/salon/[slug]` page.
+
+Editable fields:
+- Salon/studio name
+- Description (textarea)
+- Locality + full address
+- Specialty tags (multi-select, same options as onboarding)
+- Price range indicator (₹ / ₹₹ / ₹₹₹)
+- Cover image (re-uploadable)
+- Contact: phone, email, Instagram, WhatsApp
+- Team members: name + role (e.g. "Lead Makeup Artist", "Mehendi Specialist") — add/remove rows
+
+**Publish toggle:** a prominent switch — `is_published: true/false`. When off, the salon does not appear in `/explore` or in AI Concierge recommendations, and direct visits to `/salon/[slug]` show a "this profile is not yet live" state.
+
+Save button updates the corresponding row in the `salons` table. Changes should reflect immediately on the public page — no caching delay for the hackathon demo.
+
+---
+
+### 5. Service Menu Manager (`/artist/dashboard/services`)
+
+- List view of all current services, each with edit and delete icon buttons
+- "Add Service" opens an inline form (not a separate page — keep it fast):
+  - Service name (e.g. "HD Bridal Makeup")
+  - Duration (e.g. "3 hours")
+  - Price (₹ amount, numeric input)
+  - Description (optional, short)
+  - Category tag (Bridal Makeup / Pre-Bridal / Hair / Mehendi / Other)
+- Services should be drag-reorderable (the order here is the order shown on the public Services & Pricing accordion)
+- Stored as a `jsonb` array on the `salons.services` column — no separate table needed for hackathon scope
+
+---
+
+### 6. Portfolio Manager (`/artist/dashboard/portfolio`)
+
+- Grid layout of currently uploaded photos, each with a delete (×) button on hover
+- Drag-and-drop upload zone at the top — uploads go to Supabase Storage, URLs appended to `salons.gallery_images`
+- Maximum 20 photos (soft limit, just don't let the upload UI accept more)
+- Photos should be reorderable by drag — order here matches the order shown in the public Portfolio masonry grid
+- Empty state: if no photos yet, show an illustrated empty state with "Upload your first photo" CTA — never show a blank grid
+
+---
+
+### 7. Availability Manager (`/artist/dashboard/availability`)
+
+Two sections on one page:
+
+**Weekly hours grid** — one row per day (Mon–Sun), each row has:
+- Toggle: Open / Closed
+- If open: start time + end time pickers
+
+**Blocked dates calendar** — a month-view calendar where the artist clicks individual dates to mark them unavailable (festivals, personal leave, fully booked days). Blocked dates appear visually distinct (e.g. struck through or shaded).
+
+Both are saved to the `salons` table: `working_hours` (jsonb) and `blocked_dates` (date array). The customer-facing booking flow at `/book/[salonId]` must respect both — blocked dates and outside-of-hours slots should not be selectable.
+
+---
+
+### 8. Booking Inbox (`/artist/dashboard/bookings`)
+
+The most operationally important page — this is where revenue happens.
+
+- Filter tabs at top: All · Pending · Confirmed · Completed · Declined
+- List of bookings, newest first, each as a card showing:
+  - Customer name + phone number
+  - Service requested
+  - Date + time slot
+  - Total amount
+  - Any customer notes
+  - Status badge (color-coded: pending=gold, confirmed=green, declined=rose, completed=charcoal)
+- **Pending bookings get two action buttons:** "Confirm" and "Decline"
+  - Confirm → PATCH to `/api/bookings/[id]`, status becomes `confirmed`
+  - Decline → opens a small reason input (optional), then PATCHes status to `declined`
+- Pending bookings should be visually prioritized at the top regardless of date, since they require action
+
+---
+
+### 9. Reviews Dashboard (`/artist/dashboard/reviews`)
+
+Read-only — artists cannot edit or delete customer reviews, only view and flag.
+
+- List of all reviews for their salon, newest first
+- Each review: star rating, review text, customer name, date, "verified booking" badge if applicable
+- "Flag for review" button on each — for hackathon scope this can just mark a boolean field, no actual admin moderation flow needs to be built
+- Summary header showing: average rating (large number), total review count, and a simple rating distribution bar (5-star: x%, 4-star: y%, etc.)
+
+---
+
+## Database Fields Required for Artist Side
+
+Add these fields to the existing `salons` table:
+
+```sql
+owner_id uuid REFERENCES auth.users,      -- which artist owns this salon
+working_hours jsonb,                       -- {mon: {open: true, start: "10:00", end: "19:00"}, ...}
+blocked_dates date[],                      -- array of unavailable dates
+is_published boolean DEFAULT false         -- artist controls public visibility
+```
+
+Add this field to `profiles`:
+
+```sql
+role text DEFAULT 'customer'               -- 'customer' | 'artist'
+```
+
+---
+
+## What the Artist Side Should NOT Include
+
+To keep scope realistic for the build sprint:
+
+- No payment processing or payout management (out of scope — bookings are informational, payment happens offline/in-person)
+- No multi-team-member login (one login per salon, even if they list multiple team members on their profile)
+- No admin moderation panel (review flagging just sets a boolean — no actual moderation workflow needs to be built)
+- No analytics beyond the basic stats cards on the dashboard home
+- AI features (Concierge, Hairstyle Analyzer, Package Builder, Timeline) remain customer-only — artists do not get an AI dashboard
+
+---
+
+## Submission Checklist Addition — Artist Side
+
+- [ ] Artist can sign up and complete onboarding wizard
+- [ ] Artist dashboard home shows live stats
+- [ ] Profile editor changes reflect on public `/salon/[slug]` page
+- [ ] Service add/edit/delete works and reflects publicly
+- [ ] Portfolio upload works, photos appear publicly
+- [ ] Blocked dates actually prevent those dates being booked by customers
+- [ ] Booking confirm/decline updates status and customer sees updated status
+- [ ] Publish toggle actually hides/shows salon from `/explore`
