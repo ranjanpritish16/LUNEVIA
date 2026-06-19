@@ -47,7 +47,7 @@ export default function ServicesPage() {
         <h2 className="font-cormorant text-xl text-primary mb-4">Add New Service</h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <input value={name} onChange={(e) => setName(e.target.value)}
-            placeholder="Service name" 
+            placeholder="Service name"
             className="rounded-lg border border-gold/20 px-3 py-2 text-sm font-dm-sans focus:outline-none focus:border-gold" />
           <input value={price} onChange={(e) => setPrice(e.target.value)}
             placeholder="Price (₹)" type="number"

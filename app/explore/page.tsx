@@ -1,16 +1,17 @@
-import type { Metadata } from "next";
-
 import { ExplorePage } from "@/components/explore/ExplorePage";
-import { getAllSalons } from "@/lib/data/salons";
+import { supabase } from "@/lib/supabase";
+import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Explore Artists — LUNÉVIA",
-  description:
-    "Browse and filter Delhi's finest verified bridal beauty artists.",
+  description: "Browse and filter Delhi's finest verified bridal beauty artists.",
 };
 
-export default function Explore() {
-  const salons = getAllSalons();
+export default async function Explore() {
+  const { data: salons } = await supabase
+    .from("salons")
+    .select("*")
+    .order("rating", { ascending: false });
 
-  return <ExplorePage salons={salons} />;
+  return <ExplorePage salons={salons || []} />;
 }
