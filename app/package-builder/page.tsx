@@ -474,9 +474,25 @@ function ResultsPage({ package: pkg, onStartOver }: ResultsPageProps) {
       >
         <LuneviaButton
           size="lg"
-          onClick={() => {
-            // Toast notification would go here
-            alert("✓ Package saved to your favorites!");
+          onClick={async () => {
+            const { supabase } = await import("@/lib/supabase");
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+              alert("Please log in to save your package!");
+              router.push("/login");
+              return;
+            }
+
+            const { error } = await supabase.from("saved_packages").insert({
+              customer_id: user.id,
+              package_data: pkg,
+            });
+
+            if (error) {
+              alert(`Error saving package: ${error.message}`);
+            } else {
+              alert("✓ Package saved to your profile!");
+            }
           }}
         >
           Save My Package

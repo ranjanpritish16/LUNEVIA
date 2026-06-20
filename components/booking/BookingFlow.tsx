@@ -3,7 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 
 import { Badge } from "@/components/ui/Badge";
 import { LuneviaButton } from "@/components/ui/LuneviaButton";
@@ -338,14 +338,108 @@ export function BookingFlow({ salon }: BookingFlowProps) {
   );
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
   const [bookingId] = useState(
     () => `LNV-2024-${String(Math.floor(1000 + Math.random() * 9000))}`
   );
 
-  const takenSlots = useMemo(() => getTakenSlots(salon.slug), [salon.slug]);
+  const [isBooking, setIsBooking] = useState(false);
+
+  const [takenSlots, setTakenSlots] = useState<string[]>([]);
+
+  // Load customer profile
+  useEffect(() => {
+    async function loadProfile() {
+      const { supabase } = await import("@/lib/supabase");
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("full_name, phone_number")
+          .eq("id", user.id)
+          .single();
+        if (profile) {
+          if (profile.full_name) setCustomerName(profile.full_name);
+          if (profile.phone_number) setCustomerPhone(profile.phone_number);
+        }
+      }
+    }
+    loadProfile();
+  }, []);
+
+  // Fetch taken slots when date changes
+  useEffect(() => {
+    if (!selectedDate) {
+      setTakenSlots([]);
+      return;
+    }
+
+    let active = true;
+    async function fetchSlots() {
+      const { supabase } = await import("@/lib/supabase");
+      const { data } = await supabase
+        .from("bookings")
+        .select("time_slot")
+        .eq("salon_id", salon.id)
+        .eq("date", formatDateShort(selectedDate!))
+        .in("status", ["pending", "confirmed"]);
+
+      if (active && data) {
+        setTakenSlots(data.map((b) => b.time_slot));
+      }
+    }
+    fetchSlots();
+
+    return () => {
+      active = false;
+    };
+  }, [selectedDate, salon.id]);
 
   const canContinueStep1 = selectedService !== null && selectedDate !== null;
   const canConfirmStep2 = selectedTime !== null;
+
+  async function handleConfirmBooking() {
+    if (!selectedService || !selectedDate || !selectedTime) return;
+    setIsBooking(true);
+
+    const { supabase } = await import("@/lib/supabase");
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (user) {
+      const finalName = customerName.trim() || user.email?.split("@")[0] || "Customer";
+      const finalPhone = customerPhone.trim() || null;
+
+      // 1. Save booking
+      const { error } = await supabase.from("bookings").insert({
+        salon_id: salon.id,
+        customer_id: user.id,
+        customer_name: finalName,
+        customer_phone: finalPhone,
+        service_id: selectedService.id,
+        date: formatDateShort(selectedDate),
+        time_slot: selectedTime,
+        total_amount: parseInt(String(selectedService.price).replace(/\D/g, "")) || 0,
+        status: "pending",
+      });
+      if (error) {
+        console.error("Booking insert error:", error);
+        alert(`Error: ${error.message}`);
+        setIsBooking(false);
+        return;
+      }
+
+      // 2. Auto-save profile so they don't have to enter it again
+      await supabase.from("profiles").upsert({
+        id: user.id,
+        full_name: customerName,
+        phone_number: customerPhone,
+      });
+    }
+
+    setStep(3);
+    setIsBooking(false);
+  }
 
   return (
     <div className="relative mx-auto max-w-5xl px-4 pb-16 pt-24 md:px-6 md:pt-28">
@@ -381,7 +475,7 @@ export function BookingFlow({ salon }: BookingFlowProps) {
                   Select a Service
                 </h2>
                 <ul className="mt-4 space-y-3">
-                  {salon.services.map((service) => {
+                  {(salon.services || []).map((service: any) => {
                     const isSelected = selectedService?.id === service.id;
                     return (
                       <li key={service.id}>
@@ -505,15 +599,15 @@ export function BookingFlow({ salon }: BookingFlowProps) {
             </div>
 
             <div className="mt-10 flex items-center justify-between gap-4">
-              <LuneviaButton variant="ghost" onClick={() => setStep(1)}>
+              <LuneviaButton variant="ghost" onClick={() => setStep(1)} disabled={isBooking}>
                 ← Back
               </LuneviaButton>
               <LuneviaButton
                 size="lg"
-                disabled={!canConfirmStep2}
-                onClick={() => setStep(3)}
+                disabled={!canConfirmStep2 || isBooking}
+                onClick={handleConfirmBooking}
               >
-                Confirm Booking →
+                {isBooking ? "Confirming..." : "Confirm Booking →"}
               </LuneviaButton>
             </div>
           </motion.div>

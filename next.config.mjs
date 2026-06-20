@@ -10,6 +10,10 @@ const nextConfig = {
         protocol: "https",
         hostname: "placehold.co",
       },
+      {
+        protocol: "https",
+        hostname: "yfuiujnucrarjikxoctd.supabase.co",
+      },
     ],
   },
   // Avoid stale webpack chunks on Windows dev (HMR cache corruption)

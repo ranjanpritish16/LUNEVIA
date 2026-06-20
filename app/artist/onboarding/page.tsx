@@ -10,10 +10,10 @@ import { Upload, X, Plus, ArrowRight, ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // ── Constants ────────────────────────────────────────────────────────
-const LOCALITIES = ["Lajpat Nagar","Hauz Khas","Punjabi Bagh","South Ex","Greater Kailash","Karol Bagh","Rohini","Dwarka","Vasant Kunj","Saket"];
-const SPECIALTY_OPTIONS = ["Bridal Makeup","Mehendi","Hair Styling","Pre-Bridal Packages"];
-const SERVICE_CATEGORIES = ["Bridal Makeup","Pre-Bridal","Hair","Mehendi","Other"];
-const STEP_LABELS = ["Basics","Contact","Services","Photo"];
+const LOCALITIES = ["Lajpat Nagar", "Hauz Khas", "Punjabi Bagh", "South Ex", "Greater Kailash", "Karol Bagh", "Rohini", "Dwarka", "Vasant Kunj", "Saket"];
+const SPECIALTY_OPTIONS = ["Bridal Makeup", "Mehendi", "Hair Styling", "Pre-Bridal Packages"];
+const SERVICE_CATEGORIES = ["Bridal Makeup", "Pre-Bridal", "Hair", "Mehendi", "Other"];
+const STEP_LABELS = ["Basics", "Contact", "Services", "Photo"];
 
 interface ServiceRow {
   id: string; name: string; duration: string; price: string; category: string;
@@ -144,6 +144,9 @@ function Step3({ state, set }: { state: WizardState; set: (p: Partial<WizardStat
     set({ services: state.services.map(s => s.id === id ? { ...s, [field]: val } : s) });
   const removeService = (id: string) => set({ services: state.services.filter(s => s.id !== id) });
 
+  // Rows that won't actually be saved on submit (filter drops anything with no name)
+  const incompleteCount = state.services.filter(s => !s.name.trim() && (s.duration.trim() || s.price.trim() || s.category !== "Bridal Makeup")).length;
+
   return (
     <div className="space-y-5">
       <div>
@@ -151,41 +154,52 @@ function Step3({ state, set }: { state: WizardState; set: (p: Partial<WizardStat
         <p className="mt-1 font-dm-sans text-sm text-charcoal/50">Add at least one service to continue.</p>
       </div>
       <div className="space-y-4">
-        {state.services.map((svc, i) => (
-          <div key={svc.id} className="relative rounded-2xl border border-gold/15 bg-blush/30 p-4">
-            {state.services.length > 1 && (
-              <button type="button" onClick={() => removeService(svc.id)} className="absolute right-3 top-3 text-charcoal/30 hover:text-rose" aria-label="Remove">
-                <X size={16} />
-              </button>
-            )}
-            <p className="mb-3 font-dm-sans text-xs font-semibold uppercase tracking-widest text-charcoal/40">Service {i + 1}</p>
-            <div className="grid gap-3 md:grid-cols-2">
-              <div>
-                <label className={labelCls}>Service Name <span className="text-rose">*</span></label>
-                <input className={inputCls} placeholder="e.g. HD Bridal Makeup" value={svc.name} onChange={e => updateService(svc.id, "name", e.target.value)} />
+        {state.services.map((svc, i) => {
+          const isIncomplete = !svc.name.trim();
+          return (
+            <div key={svc.id} className={cn("relative rounded-2xl border bg-blush/30 p-4 transition-colors", isIncomplete && (svc.duration.trim() || svc.price.trim()) ? "border-rose/40" : "border-gold/15")}>
+              {state.services.length > 1 && (
+                <button type="button" onClick={() => removeService(svc.id)} className="absolute right-3 top-3 text-charcoal/30 hover:text-rose" aria-label="Remove">
+                  <X size={16} />
+                </button>
+              )}
+              <p className="mb-3 font-dm-sans text-xs font-semibold uppercase tracking-widest text-charcoal/40">Service {i + 1}</p>
+              <div className="grid gap-3 md:grid-cols-2">
+                <div>
+                  <label className={labelCls}>Service Name <span className="text-rose">*</span></label>
+                  <input className={inputCls} placeholder="e.g. HD Bridal Makeup" value={svc.name} onChange={e => updateService(svc.id, "name", e.target.value)} />
+                </div>
+                <div>
+                  <label className={labelCls}>Category</label>
+                  <select className={inputCls} value={svc.category} onChange={e => updateService(svc.id, "category", e.target.value)}>
+                    {SERVICE_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className={labelCls}>Price (₹) <span className="text-rose">*</span></label>
+                  <input className={inputCls} type="number" min="0" placeholder="18000" value={svc.price} onChange={e => updateService(svc.id, "price", e.target.value)} />
+                </div>
+                <div>
+                  <label className={labelCls}>Duration</label>
+                  <input className={inputCls} placeholder="e.g. 3 hours" value={svc.duration} onChange={e => updateService(svc.id, "duration", e.target.value)} />
+                </div>
               </div>
-              <div>
-                <label className={labelCls}>Category</label>
-                <select className={inputCls} value={svc.category} onChange={e => updateService(svc.id, "category", e.target.value)}>
-                  {SERVICE_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className={labelCls}>Price (₹) <span className="text-rose">*</span></label>
-                <input className={inputCls} type="number" min="0" placeholder="18000" value={svc.price} onChange={e => updateService(svc.id, "price", e.target.value)} />
-              </div>
-              <div>
-                <label className={labelCls}>Duration</label>
-                <input className={inputCls} placeholder="e.g. 3 hours" value={svc.duration} onChange={e => updateService(svc.id, "duration", e.target.value)} />
-              </div>
+              {isIncomplete && (svc.duration.trim() || svc.price.trim()) && (
+                <p className="mt-2 font-dm-sans text-xs text-rose">This row needs a name or it won't be saved.</p>
+              )}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
       <button type="button" onClick={() => set({ services: [...state.services, newService()] })}
         className="inline-flex items-center gap-2 rounded-xl border border-gold/30 px-4 py-2.5 font-dm-sans text-sm text-gold transition-all hover:bg-gold/10">
         <Plus size={15} /> Add Another Service
       </button>
+      {incompleteCount > 0 && (
+        <p className="font-dm-sans text-xs text-charcoal/40">
+          {incompleteCount} unnamed service{incompleteCount > 1 ? "s" : ""} won't be saved unless you give {incompleteCount > 1 ? "them" : "it"} a name.
+        </p>
+      )}
     </div>
   );
 }
@@ -330,20 +344,36 @@ export default function ArtistOnboardingPage() {
         const { error: uploadError } = await supabase.storage
           .from("salon-covers")
           .upload(path, state.coverImageFile, { upsert: true });
-        if (!uploadError) {
-          const { data } = supabase.storage.from("salon-covers").getPublicUrl(path);
-          coverUrl = data.publicUrl;
+
+        if (uploadError) {
+          // Previously this failed silently and inserted the salon with
+          // cover_image: null, leaving the artist unaware their photo
+          // never saved. Now we stop and surface it instead.
+          setSubmitError(`Your photo couldn't be uploaded (${uploadError.message}). You can try again, or skip the photo and add it later from your dashboard.`);
+          setSubmitting(false);
+          return;
         }
+        const { data } = supabase.storage.from("salon-covers").getPublicUrl(path);
+        coverUrl = data.publicUrl;
       }
 
       const slug = generateSlug(state.name);
+
+      // Derive a real location string instead of hardcoding "Delhi" —
+      // prefer the address they typed, fall back to locality, then a
+      // generic default rather than silently mislabeling every salon.
+      const derivedLocation = state.address.trim()
+        ? state.address.trim()
+        : state.locality
+          ? `${state.locality}, Delhi`
+          : "Delhi";
 
       const { error: insertError } = await supabase.from("salons").insert({
         owner_id: userId,
         name: state.name.trim(),
         slug,
         description: state.description.trim(),
-        location: "Delhi",
+        location: derivedLocation,
         locality: state.locality,
         specialty: state.specialty,
         price_range: "₹₹",

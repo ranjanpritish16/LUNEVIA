@@ -1,40 +1,45 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 
-// Matches the salons table schema from context.md + artist-side additions
+export interface RecentBooking {
+  id: string;
+  customer_name: string | null;
+  service_id: string | null;
+  date: string | null;
+  status: string | null;
+}
+
 export interface ArtistSalon {
   id: string;
+  owner_id: string;
   name: string;
   slug: string;
   description: string | null;
   location: string | null;
+  locality: string | null;
   specialty: string[] | null;
   price_range: string | null;
   rating: number | null;
   review_count: number | null;
-  verified: boolean;
+  verified: boolean | null;
   cover_image: string | null;
   gallery_images: string[] | null;
-  services: Record<string, unknown>[] | null;
-  team: { name: string; role: string }[] | null;
-  contact: Record<string, string> | null;
-  owner_id: string;
-  working_hours: Record<string, unknown> | null;
+  services: any[] | null;
+  team: any[] | null;
+  contact: Record<string, any> | null;
+  working_hours: Record<string, any> | null;
   blocked_dates: string[] | null;
-  is_published: boolean;
+  is_published: boolean | null;
   created_at: string;
+  // Derived/aggregated fields, not real columns on `salons`
+  pending_bookings_count: number;
+  monthly_bookings_count: number;
+  recent_bookings: RecentBooking[];
 }
 
-interface UseArtistSalonReturn {
-  salon: ArtistSalon | null;
-  isLoading: boolean;
-  error: string | null;
-  refetch: () => Promise<void>;
-}
-
-export function useArtistSalon(): UseArtistSalonReturn {
+export function useArtistSalon() {
   const [salon, setSalon] = useState<ArtistSalon | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -43,40 +48,58 @@ export function useArtistSalon(): UseArtistSalonReturn {
     setIsLoading(true);
     setError(null);
 
-    try {
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
-
-      if (userError || !user) {
-        setError("Not authenticated");
-        setSalon(null);
-        return;
-      }
-
-      const { data, error: salonError } = await supabase
-        .from("salons")
-        .select("*")
-        .eq("owner_id", user.id)
-        .single();
-
-      if (salonError) {
-        // PGRST116 = no rows found — not an error, just no salon yet
-        if (salonError.code === "PGRST116") {
-          setSalon(null);
-        } else {
-          setError(salonError.message);
-        }
-        return;
-      }
-
-      setSalon(data as ArtistSalon);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error");
-    } finally {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setSalon(null);
       setIsLoading(false);
+      return;
     }
+
+    const { data: salonRow, error: salonError } = await supabase
+      .from("salons")
+      .select("*")
+      .eq("owner_id", user.id)
+      .maybeSingle();
+
+    if (salonError || !salonRow) {
+      setSalon(null);
+      setIsLoading(false);
+      if (salonError) setError(salonError.message);
+      return;
+    }
+
+    // Start of current calendar month, for the "this month" stat
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+      .toISOString()
+      .slice(0, 10);
+
+    const [pendingRes, monthlyRes, recentRes] = await Promise.all([
+      supabase
+        .from("bookings")
+        .select("id", { count: "exact", head: true })
+        .eq("salon_id", salonRow.id)
+        .eq("status", "pending"),
+      supabase
+        .from("bookings")
+        .select("id", { count: "exact", head: true })
+        .eq("salon_id", salonRow.id)
+        .gte("date", monthStart),
+      supabase
+        .from("bookings")
+        .select("id, customer_name, service_id, date, status")
+        .eq("salon_id", salonRow.id)
+        .order("created_at", { ascending: false })
+        .limit(5),
+    ]);
+
+    setSalon({
+      ...salonRow,
+      pending_bookings_count: pendingRes.count ?? 0,
+      monthly_bookings_count: monthlyRes.count ?? 0,
+      recent_bookings: recentRes.data ?? [],
+    });
+    setIsLoading(false);
   }, []);
 
   useEffect(() => {
