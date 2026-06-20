@@ -15,8 +15,10 @@ LUNEVIA helps users discover the perfect bridal hairstyle by:
 - **Privacy-First Design**: Face analysis happens entirely client-side; images are never sent to servers
 - **8 Face Shape Classification**: Supports Oval, Round, Square, Heart, Diamond, Rectangle, Triangle (Pear), and Inverted Triangle
 - **AI-Powered Recommendations**: Gemini generates contextual hairstyle suggestions with explanations
+- **Live Database Integration**: Supabase backend powers real-time bookings, reviews, and artist portfolios
+- **Automated Reputation System**: Database triggers calculate and update artist ratings instantly
+- **Live AI Concierge**: Connects dynamically to the Supabase database to recommend real artists based on live data
 - **Responsive UI**: Beautiful, modern interface built with React, Tailwind CSS, and Framer Motion
-- **Real-time Analysis**: Instant face detection and measurement extraction
 
 ## 🎨 Pages & Features Overview
 
@@ -112,7 +114,7 @@ Comprehensive salon information:
 Complete booking management system:
 - **Booking Flow**: Step-by-step booking process
 - **Service Selection**: Choose hairstyle or package
-- **Date/Time Selection**: Pick available booking slots
+- **Date/Time Selection**: Pick available booking slots with conflict prevention
 - **Stylist Selection**: Choose preferred artist
 - **Trial Run Options**: Schedule pre-wedding trial
 - **Special Requirements**: Add notes and preferences
@@ -121,7 +123,26 @@ Complete booking management system:
 
 **Component:** `BookingFlow.tsx`
 
-### 8. **Navigation & Layout**
+### 8. **Platform Reviews** (`/reviews`)
+Community-driven feedback system:
+- **Testimonial Display**: Real-time display of user feedback
+- **Review Submission**: Frictionless form for brides to leave website feedback
+- **Rating System**: 5-star rating integration
+- **Database Integration**: Fully connected to live Supabase `site_reviews` table
+
+**Component:** `PlatformReviewsPage.tsx`
+
+### 9. **Artist Dashboard** (`/artist/dashboard`)
+Complete management portal for makeup artists:
+- **Profile Management**: Update salon details, pricing, and bio
+- **Availability Editor**: Set working hours and block off dates
+- **Bookings Portal**: View, confirm, and decline customer bookings in real-time
+- **Reviews Tracker**: Monitor client feedback with auto-updating reputation scores
+- **Portfolio Uploader**: Native Supabase Storage integration for direct device-to-database photo uploads
+
+**Components:** `app/artist/dashboard/*`
+
+### 10. **Navigation & Layout**
 - **Navbar**: Top navigation with:
   - Logo and branding
   - Main navigation links (Explore, AI Match, How it Works)
@@ -132,12 +153,12 @@ Complete booking management system:
   - Quick links
   - Contact information
   - Social media links
-  - Newsletter signup
+  - Platform Reviews link
   - Privacy and terms links
 
 **Components:** `Navbar.tsx`, `Footer.tsx`
 
-### 9. **UI Components Library**
+### 11. **UI Components Library**
 Reusable components used throughout:
 - **LuneviaButton**: Custom styled buttons with hover effects
 - **Badge**: Labels for face shapes, occasions, and tags

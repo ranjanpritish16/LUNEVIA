@@ -1,6 +1,36 @@
 "use client";
 
+import { useState } from "react";
+
 export default function ContactPage() {
+    const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  
+    async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+        e.preventDefault();
+        setStatus("loading");
+        
+        const formData = new FormData(e.currentTarget);
+        
+        try {
+            const res = await fetch("https://formsubmit.co/ajax/hello.luneviaa@gmail.com", {
+                method: "POST",
+                headers: {
+                    'Accept': 'application/json'
+                },
+                body: formData
+            });
+            
+            if (res.ok) {
+                setStatus("success");
+                (e.target as HTMLFormElement).reset();
+            } else {
+                setStatus("error");
+            }
+        } catch (err) {
+            setStatus("error");
+        }
+    }
+
     return (
         <div className="min-h-screen bg-cream px-4 py-24">
             <div className="mx-auto max-w-xl">
@@ -46,26 +76,65 @@ export default function ContactPage() {
 
                 <div className="mt-10 rounded-2xl border border-gold/20 bg-blush/60 p-6">
                     <p className="font-cormorant text-2xl text-primary mb-4">Send a Message</p>
-                    <div className="space-y-4">
-                        <input
-                            type="text"
-                            placeholder="Your name"
-                            className="w-full rounded-xl border border-gold/30 bg-cream py-3 px-4 font-dm-sans text-sm text-primary placeholder-charcoal/30 focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
-                        />
-                        <input
-                            type="email"
-                            placeholder="your@email.com"
-                            className="w-full rounded-xl border border-gold/30 bg-cream py-3 px-4 font-dm-sans text-sm text-primary placeholder-charcoal/30 focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
-                        />
-                        <textarea
-                            rows={4}
-                            placeholder="Your message..."
-                            className="w-full rounded-xl border border-gold/30 bg-cream py-3 px-4 font-dm-sans text-sm text-primary placeholder-charcoal/30 focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold resize-none"
-                        />
-                        <button className="w-full rounded-xl bg-gold py-3 font-dm-sans text-sm font-semibold text-cream hover:bg-gold/90 transition-colors">
-                            Send Message
-                        </button>
-                    </div>
+                    
+                    {status === "success" ? (
+                        <div className="rounded-xl border border-gold/30 bg-cream p-6 text-center">
+                            <span className="text-3xl mb-2 block">✨</span>
+                            <p className="font-cormorant text-xl text-primary mb-2">Message Sent!</p>
+                            <p className="font-dm-sans text-sm text-charcoal/70">
+                                Thank you for reaching out. We will get back to you shortly.
+                            </p>
+                            <button 
+                                onClick={() => setStatus("idle")}
+                                className="mt-4 text-xs font-dm-sans text-gold hover:underline"
+                            >
+                                Send another message
+                            </button>
+                        </div>
+                    ) : (
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            {/* Honeypot for spam bots */}
+                            <input type="text" name="_honey" style={{ display: "none" }} />
+                            {/* Disable Captcha */}
+                            <input type="hidden" name="_captcha" value="false" />
+                            
+                            <input
+                                type="text"
+                                name="name"
+                                required
+                                placeholder="Your name"
+                                className="w-full rounded-xl border border-gold/30 bg-cream py-3 px-4 font-dm-sans text-sm text-primary placeholder-charcoal/30 focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
+                            />
+                            <input
+                                type="email"
+                                name="email"
+                                required
+                                placeholder="your@email.com"
+                                className="w-full rounded-xl border border-gold/30 bg-cream py-3 px-4 font-dm-sans text-sm text-primary placeholder-charcoal/30 focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
+                            />
+                            <textarea
+                                name="message"
+                                required
+                                rows={4}
+                                placeholder="Your message..."
+                                className="w-full rounded-xl border border-gold/30 bg-cream py-3 px-4 font-dm-sans text-sm text-primary placeholder-charcoal/30 focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold resize-none"
+                            />
+                            
+                            {status === "error" && (
+                                <p className="font-dm-sans text-xs text-rose">
+                                    Something went wrong. Please try again later.
+                                </p>
+                            )}
+
+                            <button 
+                                type="submit" 
+                                disabled={status === "loading"}
+                                className="w-full rounded-xl bg-gold py-3 font-dm-sans text-sm font-semibold text-cream hover:bg-gold/90 transition-colors disabled:opacity-50"
+                            >
+                                {status === "loading" ? "Sending..." : "Send Message"}
+                            </button>
+                        </form>
+                    )}
                 </div>
             </div>
         </div>
