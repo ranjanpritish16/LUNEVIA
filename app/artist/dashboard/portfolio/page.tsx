@@ -13,6 +13,53 @@ export default function PortfolioPage() {
 
   const images = salon?.gallery_images || [];
 
+  const [uploading, setUploading] = useState(false);
+
+  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    if (!salon || !e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
+    
+    setUploading(true);
+    setIsAdding(true);
+    
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+    const filePath = `${salon.id}/${fileName}`;
+
+    try {
+      // 1. Upload to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('salon-covers')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        alert("Upload failed: " + uploadError.message + "\n\nPlease ensure you have created a PUBLIC bucket named 'salon-covers' in Supabase Storage.");
+        throw uploadError;
+      }
+
+      // 2. Get Public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('salon-covers')
+        .getPublicUrl(filePath);
+
+      // 3. Save to database
+      const updatedImages = [...images, publicUrl];
+      const { error: dbError } = await supabase
+        .from("salons")
+        .update({ gallery_images: updatedImages })
+        .eq("id", salon.id);
+
+      if (dbError) throw dbError;
+      
+      await refetch();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setUploading(false);
+      setIsAdding(false);
+    }
+  }
+
   async function addItem() {
     if (!salon || !imageUrl) return;
     setIsAdding(true);
@@ -80,25 +127,45 @@ export default function PortfolioPage() {
       <div className="rounded-2xl border border-gold/20 bg-white p-6 space-y-4">
         <h2 className="font-cormorant text-xl text-primary">Add a photo</h2>
         <p className="font-dm-sans text-xs text-charcoal/50">
-          Paste a hosted image URL — it'll appear on your public salon page right away.
+          Upload an image directly from your device, or paste a hosted URL.
         </p>
 
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <input
-            value={imageUrl}
-            onChange={(e) => setImageUrl(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && !isAdding && imageUrl && addItem()}
-            placeholder="https://…"
-            className="flex-1 rounded-lg border border-gold/20 px-3 py-2.5 font-dm-sans text-sm text-charcoal focus:border-gold focus:outline-none"
-          />
-          <button
-            onClick={addItem}
-            disabled={isAdding || !imageUrl}
-            className="flex items-center justify-center gap-2 rounded-full bg-gold px-6 py-2.5 font-dm-sans text-sm font-medium text-white transition-colors hover:bg-gold/90 disabled:opacity-50"
-          >
-            <ImagePlus size={15} />
-            {isAdding ? "Adding…" : "Add photo"}
-          </button>
+        <div className="flex flex-col gap-4">
+          {/* File Upload Option */}
+          <div className="flex items-center gap-3 border-2 border-dashed border-gold/30 rounded-xl p-6 bg-cream/30 hover:bg-cream/60 transition-colors">
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleFileUpload}
+              disabled={uploading || isAdding}
+              className="block w-full text-sm text-charcoal file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-medium file:bg-gold file:text-white hover:file:bg-gold/90"
+            />
+            {uploading && <span className="text-sm font-dm-sans text-primary">Uploading...</span>}
+          </div>
+
+          <div className="flex items-center gap-4 py-2">
+            <div className="h-px flex-1 bg-gold/20"></div>
+            <span className="text-xs font-dm-sans text-charcoal/50 uppercase tracking-widest">OR PASTE URL</span>
+            <div className="h-px flex-1 bg-gold/20"></div>
+          </div>
+
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <input
+              value={imageUrl}
+              onChange={(e) => setImageUrl(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && !isAdding && imageUrl && addItem()}
+              placeholder="https://…"
+              className="flex-1 rounded-lg border border-gold/20 px-3 py-2.5 font-dm-sans text-sm text-charcoal focus:border-gold focus:outline-none"
+            />
+            <button
+              onClick={addItem}
+              disabled={isAdding || !imageUrl}
+              className="flex items-center justify-center gap-2 rounded-full border border-gold px-6 py-2.5 font-dm-sans text-sm font-medium text-gold transition-colors hover:bg-gold hover:text-white disabled:opacity-50"
+            >
+              <ImagePlus size={15} />
+              {isAdding && !uploading ? "Adding…" : "Add URL"}
+            </button>
+          </div>
         </div>
 
         {imageUrl && (

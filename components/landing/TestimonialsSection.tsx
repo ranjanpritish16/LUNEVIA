@@ -93,6 +93,15 @@ export function TestimonialsSection() {
             </motion.article>
           ))}
         </motion.div>
+
+        <div className="mt-16 text-center">
+          <a
+            href="/reviews"
+            className="inline-flex rounded-full border border-gold px-8 py-3 font-dm-sans text-sm font-medium text-gold transition-colors hover:bg-gold hover:text-white"
+          >
+            Read More Reviews
+          </a>
+        </div>
       </div>
     </section>
   );

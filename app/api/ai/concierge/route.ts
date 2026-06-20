@@ -1,10 +1,5 @@
 import { NextResponse } from "next/server";
-
-import {
-  getAllSalons,
-  getSalonContextForConcierge,
-  getSalonSlugById,
-} from "@/lib/data/salons";
+import { supabase } from "@/lib/supabase";
 import { getGeminiModel } from "@/lib/gemini";
 import type {
   ConciergeApiResponse,
@@ -38,7 +33,7 @@ interface RawConciergeResponse {
 function buildSystemPrompt(salonJson: string): string {
   return `You are LUNÉVIA Concierge — a warm, knowledgeable luxury bridal beauty consultant for Delhi weddings. You speak like a trusted friend who happens to know every great makeup artist in the city.
 
-You have access to this curated list of verified salons: ${salonJson}.
+You have access to this curated list of verified salons from our database: ${salonJson}.
 
 RESPONSE RULES — follow strictly:
 
@@ -57,7 +52,7 @@ RESPONSE RULES — follow strictly:
        }
      ]
    }
-   Recommend 1–3 salons. Only use salons from the database with their exact id and name.
+   Recommend 1–3 salons. Only use salons from the database with their exact id and name. DO NOT make up salons.
 
 2. For general questions (planning advice, what to expect, timeline questions, etc.):
    Return ONLY this JSON:
@@ -79,18 +74,17 @@ Respond in the same language the user writes in (Hindi or English).`;
 }
 
 function enrichRecommendations(
-  raw: RawRecommendation[]
+  raw: RawRecommendation[],
+  dbSalons: any[]
 ): ConciergeRecommendation[] {
   return raw.slice(0, 3).map((rec) => {
     const salonId = rec.salonId ?? "";
-    const slug =
-      getSalonSlugById(salonId) ??
-      getAllSalons().find((s) => s.name === rec.salonName)?.slug ??
-      "";
+    const dbSalon = dbSalons.find(s => s.id === salonId || s.name === rec.salonName);
+    const slug = dbSalon?.slug ?? "";
 
     return {
-      salonId,
-      salonName: rec.salonName ?? "Recommended Artist",
+      salonId: dbSalon?.id ?? salonId,
+      salonName: dbSalon?.name ?? rec.salonName ?? "Recommended Artist",
       slug,
       matchScore: Math.min(99, Math.max(80, rec.matchScore ?? 90)),
       reasoning: rec.reasoning ?? "",
@@ -111,9 +105,24 @@ export async function POST(request: Request) {
       );
     }
 
-    // Build system prompt with salon database
-    const salonContext = getSalonContextForConcierge();
-    const salonJson = JSON.stringify(salonContext);
+    // Fetch REAL salons from the database
+    const { data: dbSalons } = await supabase
+      .from("salons")
+      .select("id, name, slug, location, locality, specialty, price_range, rating, review_count, verified");
+      
+    const activeSalons = dbSalons || [];
+
+    // Build system prompt with REAL salon database
+    const salonJson = JSON.stringify(activeSalons.map(s => ({
+      id: s.id,
+      name: s.name,
+      location: s.location || s.locality,
+      specialty: s.specialty,
+      priceRange: s.price_range,
+      rating: s.rating,
+      reviewCount: s.review_count
+    })));
+    
     const systemPrompt = buildSystemPrompt(salonJson);
 
     // Build a single prompt string (compatible with v1 SDK)
@@ -167,7 +176,7 @@ export async function POST(request: Request) {
         message:
           parsed.message ??
           "Here are my top picks for you:",
-        recommendations: enrichRecommendations(rawSalons),
+        recommendations: enrichRecommendations(rawSalons, activeSalons),
       };
       return NextResponse.json({ type: "recommendations", ...response });
     }

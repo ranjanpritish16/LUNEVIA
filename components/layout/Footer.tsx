@@ -17,6 +17,7 @@ const aiFeatureLinks = [
 const companyLinks = [
   { href: "/about", label: "About Us" },
   { href: "/contact", label: "Contact" },
+  { href: "/reviews", label: "Platform Reviews" },
   { href: "/privacy", label: "Privacy Policy" },
   { href: "/terms", label: "Terms of Service" },
 ];
