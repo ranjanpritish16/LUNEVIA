@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
 export default function ServicesPage() {
+  const router = useRouter();
   const [services, setServices] = useState<any[]>([]);
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
@@ -11,7 +13,23 @@ export default function ServicesPage() {
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => { fetchServices(); }, []);
+  useEffect(() => {
+    async function init() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { router.replace("/artist/login"); return; }
+
+      const { data: salon } = await supabase
+        .from("salons")
+        .select("id")
+        .eq("owner_id", user.id)
+        .single();
+
+      if (!salon) { router.replace("/artist/onboarding"); return; }
+
+      fetchServices();
+    }
+    init();
+  }, []);
 
   async function fetchServices() {
     const { data: { user } } = await supabase.auth.getUser();
@@ -47,7 +65,7 @@ export default function ServicesPage() {
         <h2 className="font-cormorant text-xl text-primary mb-4">Add New Service</h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <input value={name} onChange={(e) => setName(e.target.value)}
-            placeholder="Service name" 
+            placeholder="Service name"
             className="rounded-lg border border-gold/20 px-3 py-2 text-sm font-dm-sans focus:outline-none focus:border-gold" />
           <input value={price} onChange={(e) => setPrice(e.target.value)}
             placeholder="Price (₹)" type="number"
@@ -65,7 +83,9 @@ export default function ServicesPage() {
         </button>
       </div>
 
-      {loading ? <p className="font-dm-sans text-sm text-charcoal">Loading...</p> : (
+      {loading ? (
+        <p className="font-dm-sans text-sm text-charcoal">Loading...</p>
+      ) : (
         <div className="space-y-4">
           {services.length === 0 ? (
             <p className="font-dm-sans text-sm text-charcoal/60">No services yet. Add your first one above!</p>
