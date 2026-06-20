@@ -105,13 +105,18 @@ export default function ProfilePage() {
                   <button
                     onClick={async () => {
                       setSavingProfile(true);
-                      await supabase.from("profiles").upsert({
+                      const { error } = await supabase.from("profiles").upsert({
                         id: user.id,
                         full_name: fullName,
                         phone_number: phone,
                       });
                       setSavingProfile(false);
-                      alert("Profile updated!");
+                      if (error) {
+                        console.error("Profile save error:", error);
+                        alert(`Failed to save: ${error.message}. Please make sure you ran the add_profile_phone.sql script in Supabase!`);
+                      } else {
+                        alert("Profile updated successfully!");
+                      }
                     }}
                     disabled={savingProfile}
                     className="rounded-full bg-gold px-6 py-2 font-dm-sans text-sm font-medium text-white disabled:opacity-50"

@@ -41,13 +41,19 @@ export default function SalonPage() {
   async function submitReview() {
     if (!user || !salon) return;
     setSubmitting(true);
-    await supabase.from("reviews").insert({
+    const { error } = await supabase.from("reviews").insert({
       salon_id: salon.id,
       customer_id: user.id,
       rating,
       comment,
       author_name: user.email,
     });
+    if (error) {
+      console.error("Review insert error:", error);
+      alert(`Failed to submit review: ${error.message}`);
+      setSubmitting(false);
+      return;
+    }
     setComment("");
     setRating(5);
     setSubmitted(true);
@@ -163,7 +169,7 @@ export default function SalonPage() {
               {Object.entries(salon.working_hours).map(([day, hrs]: [string, any]) => (
                 <div key={day} className="flex justify-between font-dm-sans text-sm">
                   <span className="capitalize text-charcoal">{day}</span>
-                  <span className="text-primary font-medium">{hrs.isOpen ? `${hrs.open} - ${hrs.close}` : "Closed"}</span>
+                  <span className="text-primary font-medium">{hrs.open ? `${hrs.start} - ${hrs.end}` : "Closed"}</span>
                 </div>
               ))}
             </div>
