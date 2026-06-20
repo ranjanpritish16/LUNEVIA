@@ -7,6 +7,8 @@ export const metadata: Metadata = {
   description: "Browse and filter Delhi's finest verified bridal beauty artists.",
 };
 
+export const revalidate = 0;
+
 export default async function Explore() {
   const { data: salons } = await supabase
     .from("salons")
