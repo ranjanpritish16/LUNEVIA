@@ -1,589 +1,428 @@
-# LUNEVIA - AI-Powered Bridal Hairstyle Recommendation App
+# LUNÉVIA — Delhi's Premier Bridal Beauty Marketplace
 
-LUNEVIA is an intelligent web application that analyzes users' face shapes using AI and recommends personalized bridal hairstyles. The app uses client-side facial landmark detection with MediaPipe and Google's Generative AI (Gemini) to provide accurate, tailored styling advice.
+LUNÉVIA is a full-stack luxury bridal booking platform that connects Delhi brides with verified makeup artists, hairstylists, and bridal studios. Built for the massive Indian wedding market, it offers a seamless end-to-end experience — from browsing curated artist profiles to booking appointments — all enhanced by powerful AI tools that help brides discover and plan their perfect look.
+
+---
 
 ## 🎯 Project Overview
 
-LUNEVIA helps users discover the perfect bridal hairstyle by:
-1. **Uploading a selfie** - Users upload a clear photo of their face
-2. **AI Face Analysis** - Client-side MediaPipe detects 468 facial landmarks and extracts precise measurements
-3. **Shape Classification** - Google Gemini AI analyzes measurements to classify face shape (Oval, Round, Square, Heart, Diamond, Rectangle, Triangle, Inverted Triangle)
-4. **Personalized Recommendations** - Gemini generates 3 bridal hairstyles tailored to the detected face shape
+LUNÉVIA is a two-sided marketplace serving both customers (brides) and service providers (artists/salons):
+
+**For Brides (Customers):**
+1. **Discover** — Browse and filter verified bridal salons across Delhi.
+2. **Book** — Select a service, pick a date and available time slot, and confirm a booking in minutes.
+3. **Navigate** — Use built-in Google Maps links to get directions directly to the salon.
+4. **Be Inspired** — Use optional AI tools (Face-Shape Hairstyle Analyzer, LUNÉVIA Concierge, AI Package Builder, AI Bridal Timeline) to plan the perfect look.
+
+**For Artists (Salons):**
+1. **Manage Profile** — Create and update a fully branded public-facing salon page with photos, services, Google Maps location, and bio.
+2. **Control Bookings** — Accept, confirm, or decline appointments via a dedicated dashboard. Bookings auto-transition to `Completed` once the service time has elapsed.
+3. **Grow Reputation** — Automatically aggregated 5-star reviews from verified customers drive placement in the "Featured Artists" homepage section.
+
+---
 
 ## 📱 Key Features
 
-- **Privacy-First Design**: Face analysis happens entirely client-side; images are never sent to servers
-- **8 Face Shape Classification**: Supports Oval, Round, Square, Heart, Diamond, Rectangle, Triangle (Pear), and Inverted Triangle
-- **AI-Powered Recommendations**: Gemini generates contextual hairstyle suggestions with explanations
-- **Live Database Integration**: Supabase backend powers real-time bookings, reviews, and artist portfolios
-- **Automated Reputation System**: Database triggers calculate and update artist ratings instantly
-- **Live AI Concierge**: Connects dynamically to the Supabase database to recommend real artists based on live data
-- **Responsive UI**: Beautiful, modern interface built with React, Tailwind CSS, and Framer Motion
+- **Two-Sided Marketplace**: Fully operational for both customers (booking) and artists (full dashboard management).
+- **Real-Time Booking Engine**: Supabase-powered scheduling engine with slot conflict prevention.
+- **Auto-Completion Logic**: The system parses service durations (including decimals like `0.5 hrs`) and auto-transitions `Confirmed` bookings to `Completed` once the appointment time + service duration has passed.
+- **Artist Control Panel**: Complete dashboard for managing profiles, portfolios, bookings, services, and payment tracking.
+- **Automated Reputation System**: Database triggers auto-calculate and update artist ratings instantly when a review is submitted.
+- **LUNÉVIA Concierge (AI)**: A Gemini-powered chatbot connected to the live salon database that recommends real artists based on user prompts.
+- **AI Hairstyle Analyzer**: A privacy-first, client-side face-shape tool using MediaPipe + Gemini. A supplementary AI feature.
+- **AI Package Builder**: A 5-step wizard that gathers the bride's preferences and generates a fully custom bridal package recommendation using Gemini.
+- **AI Bridal Timeline Generator**: Auto-generates a personalized month-by-month beauty preparation schedule from the bride's wedding date.
+- **Google Maps Integration**: Artists set their salon location; customers navigate with one click from any salon card or detail page.
+- **Smart Auth Redirect**: New users are auto-redirected to complete their profile on first login.
+- **Responsive Luxury UI**: Built with Next.js 14, Tailwind CSS, and Framer Motion with a ceremonial gold-on-dark design language.
 
-## 🎨 Pages & Features Overview
+---
 
-### 1. **Home Page** (`/`)
-The landing page introducing LUNEVIA with:
-- **Hero Section**: Stunning banner with call-to-action
-- **How It Works**: Step-by-step explanation of the face analysis process
-- **Featured Artists Section**: Showcase of top bridal stylists and artists
-- **Stats Bar**: Display of platform statistics (users, recommendations, etc.)
-- **Testimonials Section**: Real user reviews and success stories
-- **Ornamental Dividers**: Beautiful design elements separating sections
-- **Concierge Banner**: Promotion of AI assistant features
+## 🗺️ Pages & Features
 
-### 2. **AI Match / Hairstyle Analyzer** (`/hairstyle`)
-The core feature of LUNEVIA:
-- **Face Photo Upload**: Accept JPG, PNG, WebP formats
-- **Real-time Face Detection**: MediaPipe analyzes 468 facial landmarks
-- **Measurement Extraction**: Calculates face length, jaw width, forehead width, cheekbone width
-- **AI Classification**: Gemini classifies face shape (8 types)
-- **Hairstyle Recommendations**: 3 personalized bridal hairstyles with:
-  - Style name
-  - Detailed description
-  - Why it works for the detected face shape
-  - Best occasions to wear it
-- **Debug Information**: Toggle to view extracted measurements for transparency
-- **Confidence Indicator**: Shows classification confidence level (High/Medium/Low)
+### 1. Home Page (`/`)
+- **Hero Section**: Tagline with a smart search bar that passes queries via `?q=` URL parameters directly into the Explore page.
+- **Dynamic Featured Artists**: Top-4 salons ranked by live Supabase reputation score — never hardcoded.
+- **How It Works**: 3-step scroll-reveal explanation of the platform.
+- **Stats Bar**: Platform-wide numbers (artists, weddings, bookings).
+- **Testimonials Section**: Mix of hardcoded showcase reviews and live Supabase data.
+- **Concierge Banner**: Highlights the LUNÉVIA Concierge AI feature.
 
-**Key Components:**
-- `HairstyleAnalyzer.tsx`: Main UI component
-- `lib/faceMesh.ts`: Face detection engine
-- `/api/ai/hairstyle`: Backend recommendation API
+---
 
-### 3. **Explore Page** (`/explore`)
-Browse and discover bridal hairstyles:
-- **URL-Aware Search**: Automatically reads `?q=` parameters to initialize the search state, allowing users to share search links directly.
-- **SalonCards with Maps**: Features beautiful display cards with a 'Map' shortcut button that directly opens the salon's Google Maps location in a new tab (utilizing `e.stopPropagation()` to prevent accidental card navigation).
-- **Hairstyle Gallery**: Browse all available hairstyle recommendations
-- **Filter Options**: Filter by:
-  - Face shape (Oval, Round, Square, etc.)
-  - Occasion (Day wedding, Evening reception, etc.)
-  - Style type
-  - Complexity level
-- **Salon Finder**: Discover salons specializing in each style
-- **Detailed Style Pages**: View hairstyle details, requirements, and similar styles
-- **Recommendation Cards**: Beautiful cards showing hairstyle images and descriptions
+### 2. Explore Page (`/explore`)
+- **URL-Aware Search**: Reads `?q=` query parameters on load so Hero search passes seamlessly.
+- **Salon Cards**: Each card shows the salon's name, rating, specialty, price range, and location tag.
+- **Google Maps Shortcut**: Every card has a 'Map' button that opens the salon's location in Google Maps using `e.stopPropagation()` to avoid unwanted card navigation.
+- **Filter & Search**: Filter salons by specialty, locality, and price range.
 
-**Component:** `ExplorePage.tsx`
+---
 
-### 4. **LUNEVIA Concierge AI** (Global Widget + `/concierge`)
-Intelligent AI assistant available throughout the app:
-- **Chat Interface**: Ask questions about hairstyles, face shapes, and weddings
-- **Styling Tips**: Get personalized styling advice
-- **FAQs**: Common questions answered by AI
-- **Booking Assistance**: Help finding and booking stylists
-- **Real-time Responses**: Powered by Google Gemini
-- **Context-Aware**: Remembers the user's previously analyzed face shape to offer continuous personalized styling advice.
-- **Booking Assistance**: Recommends actual salons and artists based on the prompt.
+### 3. Salon Detail Page (`/salon/[slug]`)
+- **Full Salon Profile**: Displays the salon's name, cover image, description, specialties, address, and contact info — all live from Supabase.
+- **Google Maps Navigate Button**: A solid-gold "Navigate" button linking directly to the salon's saved map URL.
+- **Services Menu**: Lists all services the artist has added via their dashboard, including price, duration, and category.
+- **Portfolio Gallery**: Masonry grid of photos uploaded by the artist to Supabase Storage. Includes a lightbox with zoom in/out functionality.
+- **Interactive Reviews Section**:
+  - Displays all customer reviews, showing the reviewer's full name (not email).
+  - Signed-in customers can submit a rating using an interactive 5-star hover UI and leave a written review.
+  - Reviews auto-scroll into view via URL hash `#reviews`.
+- **Book Now Button**: Directly links to the booking flow.
 
-**Features:**
-- Always available widget in bottom corner
-- Full-page chat interface for detailed consultations
-- Typing indicators and loading states
-- Message history within session
-- Smooth animations with Framer Motion
+---
 
-**Component:** `ConciergeWidget.tsx`  
-**API:** `/api/ai/concierge`
+### 4. Booking Page (`/book/[slug]`)
+- **3-Step Wizard**: A clean, animated progress indicator (Select Service → Choose Time → Confirmation).
+- **Service Selection**: Lists all services from the salon's live menu with price and duration.
+- **Date & Time Selection**: Calendar-style date picker with available time slots (9 AM–5 PM).
+- **Real-Time Conflict Prevention**: Fetches existing `pending`/`confirmed` bookings from Supabase and greys out already-taken time slots.
+- **Auto-Profile Save**: On confirmation, the customer's name and phone number are saved to their profile automatically for future convenience.
+- **Booking Confirmation Screen**: A beautiful success state with booking summary.
 
-### 5. **Artist/Salon Directory** (`/explore` - detailed view)
-Discover professional bridal stylists:
-- **Artist Profiles**: View artist bios, specialties, and portfolios
-- **Salon Listings**: Browse all partner salons
-- **Ratings & Reviews**: Community ratings and reviews
-- **Specializations**: Filter by expertise (updos, curls, straight styles, etc.)
-- **Experience Level**: View years of experience and certifications
-- **Service Offerings**: Bridal consultations, trial runs, on-location services
+---
 
-**Component:** `FeaturedArtistsSection.tsx`  
-**Data:** `lib/data/salons.ts`
+### 5. LUNÉVIA Concierge (`/concierge` + Global Widget)
+- **Floating Chat Widget**: Available on every customer-facing page via a bottom-right toggle button.
+- **Full Concierge Page**: Expanded chat interface at `/concierge`.
+- **Live Database Context**: Queries Supabase on each conversation to include up-to-date salon names, specialties, and ratings in the AI's context window.
+- **Gemini AI Powered**: Uses Google Gemini API to generate contextual, persona-aware responses recommending real artists.
+- **Session Memory**: Message history is preserved within the browser session.
+- **Context-Aware Suggestions**: Can cross-reference the user's previously analyzed face shape for personalized styling advice.
 
-### 6. **Salon Detail Page** (`/salon/[slug]`)
-Comprehensive salon information:
-- **Salon Overview**: Name, location, contact information
-- **Services Menu**: All offered services with pricing
-- **Artists**: List of stylists available at the salon
-- **Portfolio**: Photo gallery of previous work
-- **Interactive Salon Reviews**: Displays community ratings dynamically. Features an interactive 5-star UI where users click the Nth star to set their rating, filling all stars to the left with gold. Automatically fetches and displays the user's full name (rather than their raw email) for a premium feel.
-- **Booking Button**: Direct link to book appointments
-- **Business Hours**: Operating hours and availability
-- **Contact Info**: Phone, email, website links
-- **Maps Integration**: One-click Google Maps navigation directly to the salon
+---
 
-**Component:** `SalonDetailPage.tsx`  
-**Data Source:** `lib/data/salons.ts`
+### 6. AI Hairstyle Analyzer (`/hairstyle`)
+One of LUNÉVIA's supplementary AI tools — a privacy-first, client-side face analysis feature:
+- **Face Photo Upload**: Accepts JPG, PNG, WebP formats.
+- **Client-Side Detection**: MediaPipe Tasks Vision runs entirely in the browser — the image is never sent to a server. Detects 468 facial landmarks.
+- **Geometric Measurement Extraction**: Calculates face length, jaw width, forehead width, and cheekbone width as pixel ratios.
+- **Gemini Classification**: Sends only the numeric ratios (not the photo) to Google Gemini to classify the face shape into 8 categories (Oval, Round, Square, Heart, Diamond, Rectangle, Triangle, Inverted Triangle).
+- **Personalized Recommendations**: Returns 3 tailored bridal hairstyles with the style name, why it works for the face shape, and best occasion.
+- **Confidence Indicator**: Displays classification confidence (High / Medium / Low).
+- **Debug Toggle**: Shows raw extracted measurements for transparency.
 
-### 7. **Booking Page** (`/book/[slug]`)
-Complete, conflict-free booking management system:
-- **3-Step Interactive Booking Flow**: A seamless, modern wizard interface (Select Service → Choose Time → Confirmation).
-- **Service Selection**: Browse and select specific hairstyles or packages directly from the salon's dynamic menu.
-- **Calendar & Time Selection**: Choose from available dates and time slots with an intuitive calendar UI.
-- **Real-Time Conflict Prevention**: The system instantly checks the Supabase database to disable time slots that have already been booked or confirmed by the artist.
-- **Auto-Profile Generation**: Automatically securely saves the customer's name and phone number to their user profile upon booking, preventing repetitive data entry for future bookings.
+---
 
-**Component:** `BookingFlow.tsx`
+### 7. AI Package Builder (`/package-builder`)
+- **5-Step Preference Wizard**: Gathers Wedding Date, Budget Range, Services Needed, Aesthetic Style, and Skin Tone + Notes.
+- **Auth-Gated**: Requires login before the wizard begins.
+- **Gemini-Generated Package**: Sends the answers to the Gemini API and receives a structured custom bridal package recommendation.
+- **Package Output**: Displays the suggested package name, included services, estimated timeline, and artist recommendations with reasoning.
 
-### 8. **Platform Reviews** (`/reviews`)
-Community-driven feedback system:
-- **Testimonial Display**: Real-time display of user feedback
-- **Review Submission**: Frictionless form for brides to leave website feedback
-- **Interactive Rating System**: Dynamic 5-star UI for precise feedback submission
-- **Database Integration**: Fully connected to live Supabase `site_reviews` table
+---
 
-**Component:** `PlatformReviewsPage.tsx`
+### 8. AI Bridal Timeline Generator (`/timeline`)
+- **Wedding Date Input**: Accepts a wedding date from the user.
+- **Profile Auto-Fill**: Automatically reads the user's saved `wedding_date` from their Supabase profile and pre-fills the date field, then auto-generates the timeline.
+- **Month-by-Month Schedule**: Gemini generates a personalized beauty preparation schedule (e.g., "6 months before: Book bridal trial", "1 month before: Mehendi consultation").
+- **Visual Timeline Nodes**: Each milestone is rendered as a beautiful, animated `TimelineNode` component.
 
-### 9. **Artist Dashboard** (`/artist/dashboard`)
-Complete management portal for makeup artists:
-- **Profile Management**: Update salon details, pricing, map location, and bio
-- **Availability Editor**: Set working hours and block off dates
-- **Bookings Portal**: Real-time management with auto-completion logic based on service duration
-- **Payment Tracking**: Integrated tracking for partial and full payments
-- **Reviews Tracker**: Monitor client feedback with auto-updating reputation scores
-- **Portfolio Uploader**: Native Supabase Storage integration for direct device-to-database photo uploads
+---
 
-**Components:** `app/artist/dashboard/*`
+### 9. Platform Reviews (`/reviews`)
+- **Showcase Testimonials**: A set of hardcoded premium testimonials from "featured" brides for demonstration.
+- **Live Database Reviews**: Fetches and displays all real reviews from the `site_reviews` Supabase table.
+- **Interactive 5-Star Submission Form**: Brides enter their name, location, rating (via interactive hover-to-select stars), and comment.
+- **Identity Display**: Author names are displayed as submitted — no email leakage.
 
-### 10. **Navigation & Layout**
-- **Navbar**: Top navigation with:
-  - Logo and branding
-  - Main navigation links (Explore, AI Match, How it Works)
-  - Booking button
-  - User menu
-  
-- **Footer**: 
-  - Quick links
-  - Contact information
-  - Social media links
-  - Platform Reviews link
-  - Privacy and terms links
+---
 
-**Components:** `Navbar.tsx`, `Footer.tsx`
+### 10. Authentication (`/login`)
+- **Dual-Role Login UI**: A single login page with two distinct cards — one for Brides and one for Artists — each routing the user to the correct experience after login.
+- **Supabase Auth**: Email + Password sign in and sign up, both handled on the same page with a toggle.
+- **Smart New-User Redirect**: First-time users are automatically routed to the profile completion page (`/profile`) instead of the homepage.
 
-### 11. **Authentication & Smart Onboarding**
-- **Seamless Login**: Email/phone sign-in via Supabase Auth.
-- **Smart Auth Redirect**: Automatically detects if a user is logging in for the first time. If their profile is incomplete, it bypasses the homepage and instantly redirects them to the profile completion section to ensure clean data collection.
-- **User Profile**: Complete identity management, wedding date tracking, and a dynamic view of saved/wishlisted salons.
+---
 
-### 12. **UI Components Library**
-Reusable components used throughout:
-- **LuneviaButton**: Custom styled buttons with hover effects
-- **Badge**: Labels for face shapes, occasions, and tags
-- **SalonCard**: Card component for salon listings
-- **PageWrapper**: Consistent page layout wrapper
+### 11. Customer Profile & Dashboard (`/profile`)
+- **Profile Editor**: Brides can update their full name, wedding date, location, and budget range.
+- **My Bookings**: Displays all active (upcoming) bookings with service name, date, time slot, status badge, and amount.
+- **Past Bookings**: Separate section for completed and declined bookings.
+- **Budget Tracker**: Calculates total spend and remaining budget from actual booking amounts.
+- **Saved / Wishlisted Salons**: Shows all salons the user has hearted/saved, rendered as `SalonCard` components.
+- **AI Recommendations**: Suggests salons based on the bride's saved location and budget preferences.
+- **Sign Out**: Clean logout routing back to `/login`.
 
-## � User Journey & Workflows
+---
 
-### Typical User Flow:
+### 12. Artist Login & Onboarding (`/artist/login`, `/artist/onboarding`)
+- **Artist-Only Login**: Separate login/signup page routed exclusively for salon owners.
+- **4-Step Onboarding Wizard** (for first-time artists): Covers Salon Basics, Contact Info, Services, and Cover Photo.
+  - **Basics**: Salon name, Delhi locality selector, specialty tags (Bridal Makeup, Mehendi, Hair, Pre-Bridal), description.
+  - **Contact**: Phone, full address, Instagram, WhatsApp, email.
+  - **Services**: Add multiple service rows with name, duration (e.g., `2 hrs`, `0.5 hrs`), price, and category.
+  - **Photo**: Cover image upload directly to Supabase Storage with live preview.
+- **Slug Auto-Generation**: A URL-safe salon slug is auto-generated from the salon name with a random suffix for uniqueness.
 
-1. **Discovery** → User lands on home page (`/`)
-2. **Learning** → Views "How It Works" section with step-by-step guide
-3. **Consultation** → Optional: Chats with LUNEVIA Concierge for questions
-4. **Face Analysis** → Navigates to `/hairstyle` and uploads photo
-5. **Results** → Sees AI-detected face shape and 3 hairstyle recommendations
-6. **Exploration** → Visits `/explore` to see more styles and artists
-7. **Artist Discovery** → Browses salon and artist profiles
-8. **Booking** → Selects a salon/artist and proceeds to `/book`
-9. **Confirmation** → Completes booking with calendar invite
+---
 
-### Feature Integration Points:
+### 13. Artist Dashboard (`/artist/dashboard`)
+A complete internal management portal with a custom artist-only layout (no customer Navbar/Footer). Includes an `ArtistTopBar` with navigation links to all sections.
 
-- **Concierge AI**: Available on all pages as floating widget
-- **Hairstyle Recommendations**: Links directly from analyzer to booking
-- **Salon Discovery**: Featured artists section links to full salon profiles
-- **Cross-Navigation**: Easy navigation between related features
+#### Overview Page
+- **Salon Status Badge**: Shows whether the salon is `Published` or in `Draft`.
+- **Quick Stats**: Pending bookings count, monthly bookings count.
+- **Recent Bookings Feed**: Shows the latest 5 bookings with status at a glance.
+- **Publish Prompt**: If the salon is unpublished, shows a banner to guide the artist to publish.
 
-## 🔗 Navigation Map
+#### Bookings (`/artist/dashboard/bookings`)
+- **Filter Tabs**: Filter by All, Pending, Confirmed, Completed, Declined.
+- **Real-Time Updates**: Supabase `postgres_changes` channel subscription auto-refreshes the list when new bookings arrive.
+- **Confirm / Decline Actions**: One-click confirm button; decline opens an inline reason input field before submitting.
+- **Auto-Completion Engine**: On every page load, checks every `confirmed` booking against the current time. Parses service duration strings (including decimals like `0.5 hrs`) and automatically flips status to `completed` in the UI and pushes the change to Supabase.
+- **Payment Tracking**: Artists can log partial or full payment received for each booking. Amount is saved to the `bookings` table.
+
+#### Services (`/artist/dashboard/services`)
+- **Service Manager**: Add, edit, and delete services from a clean table UI.
+- **Fields**: Name, category, duration, price.
+- **Live Sync**: Changes instantly propagate to the public-facing Salon Detail page.
+
+#### Portfolio (`/artist/dashboard/portfolio`)
+- **Photo Upload**: Upload images directly from device to Supabase Storage.
+- **Portfolio Grid**: View all uploaded photos in a masonry grid.
+- **Delete Photos**: Remove individual portfolio photos with a single click.
+
+#### Profile (`/artist/dashboard/profile`)
+- **All Salon Fields Editable**: Name, description, locality, specialties, contact info (phone, address, Instagram, WhatsApp, email).
+- **Google Maps Location**: Paste a Google Maps share link directly into the profile — this powers the "Navigate" button on the public salon card and detail page.
+- **Publish / Unpublish Toggle**: Artists control whether their salon is publicly visible on the Explore page.
+
+#### Availability (`/artist/dashboard/availability`)
+- Set working hours and mark off blocked/unavailable dates.
+
+#### Reviews (`/artist/dashboard/reviews`)
+- Read-only view of all customer reviews submitted for the salon.
+- Shows reviewer name, star rating, comment, and submission date.
+
+---
+
+## 🧭 Navigation Map
 
 ```
 Home (/)
-├── How It Works
-├── Featured Artists (links to /salon/[slug])
+├── Smart Search → /explore?q=...
+├── Featured Artists → /salon/[slug]
 ├── Testimonials
-└── CTA Buttons → /hairstyle
-
-Hairstyle Analyzer (/hairstyle)
-├── Upload Photo
-├── Face Analysis Results
-├── Recommendation Cards
-└── "Book This Style" → /salon/[slug]
+└── CTA Buttons → /explore, /concierge
 
 Explore (/explore)
-├── Browse All Hairstyles
-├── Filter by Face Shape, Occasion
-├── Artist Directory
-└── Salon Cards (links to /salon/[slug])
+├── Filter & Search Salons
+└── Salon Cards → /salon/[slug] (Map button → Google Maps)
 
-Salon Details (/salon/[slug])
-├── Salon Info & Reviews
-├── Artist Profiles
-├── Portfolio Gallery
-└── "Book Appointment" → /book/[slug]
+Salon Detail (/salon/[slug])
+├── Navigate → Google Maps
+├── Services, Portfolio, Reviews
+└── Book Now → /book/[slug]
 
 Booking (/book/[slug])
 ├── Service Selection
-├── Date/Time Selection
-├── Stylist Selection
+├── Date & Time (conflict-aware)
 └── Confirmation
 
-Concierge (Global)
-├── Available on all pages
-├── Floating widget
-└── Full chat page (optional)
+AI Features
+├── /hairstyle       — Face shape analyzer
+├── /concierge       — Floating widget + full page
+├── /package-builder — 5-step custom package wizard
+└── /timeline        — Wedding prep timeline
+
+Customer Account
+├── /login           — Dual-role login (Bride / Artist)
+└── /profile         — Dashboard, bookings, budget, saved salons
+
+Artist Portal
+├── /artist/login
+├── /artist/onboarding
+└── /artist/dashboard
+    ├── / (Overview)
+    ├── /bookings
+    ├── /services
+    ├── /portfolio
+    ├── /profile
+    ├── /availability
+    └── /reviews
+
+Static Pages
+├── /about
+├── /contact
+├── /reviews (Platform Reviews)
+├── /privacy
+└── /terms
 ```
-## 🎨 Design System & Styling
+
+---
+
+## 🎨 Design System
 
 ### Color Palette
-- **Primary Gold**: `#D4AF37` - Luxurious bridal theme
-- **Primary Charcoal**: `#1A1A1A` - Professional, elegant text
-- **Blush Rose**: `#FFF0F5` - Soft, feminine accents
-- **White**: `#FFFFFF` - Clean backgrounds
-- **Warm Shadows**: Soft drop shadows for depth
+| Token | Hex | Usage |
+|---|---|---|
+| PRIMARY | `#1A0A00` | Deep ceremonial black — backgrounds, main text |
+| GOLD | `#C9933A` | Heritage gold — CTAs, highlights, borders |
+| BLUSH | `#F5E8DC` | Warm ivory — cards, secondary backgrounds |
+| ROSE | `#C4687A` | Muted rose — tags, hover states |
+| CREAM | `#FAF6F0` | Off-white — main page surfaces |
+| CHARCOAL | `#2E1F1F` | Dark warm brown — secondary text, icons |
 
 ### Typography
-- **Headings**: Cormorant (serif) - Elegant, luxurious feel
-- **Body**: DM Sans (sans-serif) - Clean, modern, readable
-- **Font Sizes**: Responsive scaling from mobile to desktop
-
-### Components Styling
-- **Buttons**: 
-  - Gold background with hover animations
-  - Smooth transitions (400ms)
-  - Disabled states for better UX
-  
-- **Cards**:
-  - Soft shadows (warm drop shadows)
-  - Border: 1px solid gold/20
-  - Rounded corners (rounded-2xl)
-  
-- **Inputs**:
-  - Clean borders with focus states
-  - Placeholder text in lighter color
-  - Smooth transitions
+- **Display / Hero**: *Cormorant Garamond* — tall, elegant serifs for luxury feel.
+- **Body / UI**: *DM Sans* — clean, modern, highly legible.
 
 ### Animations
-- **Framer Motion** used throughout:
-  - Page transitions (fade-in-up)
-  - Card hovers and clicks
-  - Loading spinners
-  - Modal animations
-  - Recommendation cards stagger animation
+- All page transitions: `opacity 0→1`, `y: 20→0`, 400ms ease-in-out via Framer Motion.
+- Staggered card lists: 80ms between items.
+- Scroll-reveal: `whileInView` Framer Motion triggers.
 
-### Responsive Design
-- **Mobile-First**: Optimized for mobile screens first
-- **Breakpoints**: 
-  - `sm`: 640px
-  - `md`: 768px
-  - `lg`: 1024px
-  - `xl`: 1280px
-- **Touch-Friendly**: Large buttons and tap targets on mobile
-## �🛠️ Tech Stack
+---
 
-- **Frontend**: Next.js 14.2.35, React 19, TypeScript, Tailwind CSS
-- **AI/ML**: 
-  - MediaPipe Tasks Vision (v0.10.5) - Client-side face detection
-  - Google Generative AI SDK (v0.24.1) - Gemini API for classification and recommendations
-- **Animations**: Framer Motion
-- **Image Processing**: HTML5 Canvas
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Framework | Next.js 14 (App Router), TypeScript |
+| Styling | Tailwind CSS v3, custom CSS variables |
+| Animations | Framer Motion |
+| Database | Supabase (PostgreSQL + Auth + Storage) |
+| AI | Google Gemini API (Concierge, Hairstyle, Package, Timeline) |
+| Face Detection | MediaPipe Tasks Vision (client-side only) |
+| Deployment | Vercel |
+
+---
 
 ## 📁 Project Structure
 
 ```
-Lunevia/
-├── app/
-│   ├── api/
-│   │   ├── ai/
-│   │   │   ├── concierge/
-│   │   │   │   └── route.ts         # Concierge AI endpoint
-│   │   │   ├── hairstyle/
-│   │   │   │   └── route.ts         # Hairstyle recommendation API
-│   │   │   └── models/
-│   │   │       └── route.ts         # Available Gemini models discovery
-│   │   ├── globals.css
-│   │   ├── layout.tsx
-│   │   ├── page.tsx                 # Home page
-│   │   └── not-found.tsx
-│   ├── book/[slug]/page.tsx         # Booking details
-│   ├── explore/page.tsx             # Explore page
-│   ├── hairstyle/page.tsx           # Hairstyle analyzer page
-│   └── salon/[slug]/page.tsx        # Salon details
-├── components/
-│   ├── ai/
-│   │   └── ConciergeWidget.tsx      # AI concierge chatbot
-│   ├── hairstyle/
-│   │   └── HairstyleAnalyzer.tsx    # Main face analysis component
-│   ├── landing/
-│   │   ├── HeroSection.tsx
-│   │   ├── FeaturedArtistsSection.tsx
-│   │   ├── HowItWorksSection.tsx
-│   │   ├── ConciergeBanner.tsx
-│   │   ├── StatsBar.tsx
-│   │   ├── TestimonialsSection.tsx
-│   │   └── OrnamentalDivider.tsx
-│   ├── layout/
-│   │   ├── Navbar.tsx
-│   │   └── Footer.tsx
-│   ├── ui/
-│   │   ├── Badge.tsx
-│   │   ├── LuneviaButton.tsx
-│   │   ├── PageWrapper.tsx
-│   │   └── SalonCard.tsx
-│   └── providers/
-│       └── ClientShell.tsx
-├── lib/
-│   ├── gemini.ts                    # Gemini API initialization
-│   ├── faceMesh.ts                  # MediaPipe face analysis engine
-│   ├── openai.ts                    # OpenAI client (future use)
-│   ├── utils.ts                     # Utility functions
-│   ├── data/
-│   │   ├── filters.ts               # Filter options
-│   │   └── salons.ts                # Salon database
-│   └── types/
-│       ├── concierge.ts             # Concierge types
-│       └── hairstyle.ts             # Hairstyle types
-├── hooks/
-│   └── useScrollY.ts                # Scroll position hook
-├── package.json
-├── tsconfig.json
-├── tailwind.config.ts
-├── postcss.config.mjs
-└── next.config.mjs
+app/
+├── page.tsx                        # Home
+├── explore/                        # Browse salons
+├── salon/[slug]/                   # Salon detail
+├── book/[slug]/                    # Booking flow
+├── concierge/                      # Full Concierge page
+├── hairstyle/                      # AI Hairstyle Analyzer
+├── package-builder/                # AI Package Builder
+├── timeline/                       # AI Bridal Timeline
+├── reviews/                        # Platform reviews
+├── profile/                        # Customer dashboard
+├── login/                          # Dual-role login
+├── artist/
+│   ├── login/                      # Artist-only login
+│   ├── onboarding/                 # 4-step setup wizard
+│   └── dashboard/
+│       ├── page.tsx                # Overview + stats
+│       ├── bookings/               # Booking manager
+│       ├── services/               # Service menu editor
+│       ├── portfolio/              # Photo uploader
+│       ├── profile/                # Salon profile editor
+│       ├── availability/           # Working hours
+│       └── reviews/                # Review reader
+├── api/ai/
+│   ├── concierge/route.ts
+│   ├── hairstyle/route.ts
+│   ├── package/route.ts
+│   └── timeline/route.ts
+├── about/
+├── contact/
+├── privacy/
+└── terms/
+
+components/
+├── ai/ConciergeWidget.tsx
+├── hairstyle/HairstyleAnalyzer.tsx
+├── booking/BookingFlow.tsx
+├── explore/ExplorePage.tsx
+├── landing/
+│   ├── HeroSection.tsx
+│   ├── FeaturedArtistsSection.tsx
+│   ├── HowItWorksSection.tsx
+│   ├── StatsBar.tsx
+│   ├── TestimonialsSection.tsx
+│   └── ConciergeBanner.tsx
+├── layout/Navbar.tsx, Footer.tsx, ArtistTopBar.tsx
+└── ui/Badge.tsx, LuneviaButton.tsx, SalonCard.tsx, TimelineNode.tsx
+
+lib/
+├── supabase.ts
+├── gemini.ts
+├── faceMesh.ts
+├── hooks/useArtistSalon.ts
+└── types/
 ```
 
-## 🔧 Technical Details
+---
 
-### Face Shape Detection (`lib/faceMesh.ts`)
-
-The app uses MediaPipe to extract 468 facial landmarks and calculate these measurements:
-- **Face Length**: Distance from forehead to chin
-- **Jaw Width**: Left to right jaw angle distance
-- **Forehead Width**: Temple to temple distance
-- **Cheekbone Width**: Left to right cheekbone distance
-
-These measurements are converted to ratios and sent to Gemini for intelligent classification.
-
-### Hairstyle Recommendation Flow
-
-1. **User uploads photo** → Component: `HairstyleAnalyzer.tsx`
-2. **MediaPipe analyzes face** → Function: `analyzeFaceShape(image)`
-3. **Measurements extracted** → Type: `FaceMeasurements`
-4. **Sent to API endpoint** → Route: `/api/ai/hairstyle`
-5. **Gemini classifies and recommends** → Model: `gemini-2.5-flash`
-6. **Results displayed to user** → UI with animated recommendations
-
-## 🚀 Installation & Setup
+## 🚀 Getting Started
 
 ### Prerequisites
+- Node.js v18+
+- Supabase project with tables: `salons`, `bookings`, `reviews`, `site_reviews`, `profiles`
+- Google Gemini API Key
 
-- **Node.js**: v18+ (LTS recommended)
-- **npm**: v9+
-- **Git**: For version control
-- **Google Gemini API Key**: Required for AI features
-
-### Step 1: Clone the Repository
+### Install & Run
 
 ```bash
 git clone https://github.com/ranjanpritish16/LUNEVIA.git
 cd LUNEVIA
-```
-
-### Step 2: Install Dependencies
-
-```bash
 npm install
-```
-
-This installs all required packages including:
-- Next.js 14
-- React 19
-- MediaPipe Tasks Vision
-- Google Generative AI SDK
-- Tailwind CSS
-- Framer Motion
-
-### Step 3: Configure Environment Variables
-
-Create a `.env.local` file in the project root:
-
-```bash
 cp .env.example .env.local
-```
-
-Edit `.env.local` and add your Google Gemini API credentials:
-
-```env
-# Google Generative AI Configuration
-GEMINI_API_KEY=your_actual_api_key_here
-GEMINI_MODEL=gemini-2.5-flash
-GEMINI_API_VERSION=v1beta
-```
-
-**Where to get your Gemini API Key:**
-1. Go to [Google AI Studio](https://aistudio.google.com)
-2. Click on "Get API Key" in the left sidebar
-3. Create a new API key for a new project
-4. Copy the API key and paste it in `.env.local`
-
-### Step 4: Run the Development Server
-
-```bash
+# Fill in your keys in .env.local
 npm run dev
 ```
 
-The application will start on `http://localhost:3000`
+### Environment Variables
 
-### Step 5: Access the App
-
-- **Home Page**: http://localhost:3000
-- **Hairstyle Analyzer**: http://localhost:3000/hairstyle
-- **Explore**: http://localhost:3000/explore
-
-## 📖 Usage Guide
-
-### Using the Hairstyle Analyzer
-
-1. Navigate to `/hairstyle` page
-2. Click **"Upload your photo"** button
-3. Select a clear, front-facing selfie (JPG, PNG, or WebP)
-4. Click **"Analyze My Face Shape"** button
-5. Wait for analysis (usually < 3 seconds)
-6. View detected face shape and 3 personalized hairstyle recommendations
-
-**Tips for Best Results:**
-- Use clear, well-lit photos
-- Face should be front-facing
-- Image should be at least 200x200 pixels
-- No filters or heavy makeup recommended
-
-### Debug Information
-
-The app displays extracted facial measurements for debugging:
-- Face Length (pixels)
-- Jaw Width (pixels)
-- Forehead Width (pixels)
-- Cheekbone Width (pixels)
-- All measurement ratios
-
-## 🔐 Privacy & Security
-
-- ✅ **No image storage**: Photos are processed client-side and never saved
-- ✅ **No server transmission**: Images stay in your browser
-- ✅ **Secure API**: Only facial measurements sent to Gemini, not images
-- ✅ **Optional cookies**: Uses browser session storage only
-
-## 🐛 Troubleshooting
-
-### Issue: "GEMINI_API_KEY is not configured"
-
-**Solution**: 
-1. Create `.env.local` file
-2. Add valid `GEMINI_API_KEY`
-3. Restart dev server with `npm run dev`
-
-### Issue: "Model not found" error (503)
-
-**Solution**: 
-1. Verify API key is correct
-2. Check if Gemini API is available (may have rate limits)
-3. Wait 1-2 minutes and retry
-4. Ensure `GEMINI_API_VERSION=v1beta` is set
-
-### Issue: Face not detected
-
-**Solution**:
-1. Ensure face is clearly visible and centered
-2. Try better lighting conditions
-3. Remove hats, glasses, or heavy accessories
-4. Take a front-facing photo (not angled)
-
-### Issue: "Cannot read property 'naturalWidth'"
-
-**Solution**: 
-1. This is fixed in latest build
-2. Update to latest code from git
-3. Clear browser cache and restart
-
-## 📦 Build for Production
-
-```bash
-npm run build
+```env
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+GEMINI_API_KEY=your_gemini_api_key
 ```
-
-Start production server:
-
-```bash
-npm start
-```
-
-## 🧪 Testing
-
-Run linting:
-
-```bash
-npm run lint
-```
-
-## 📝 API Endpoints
-
-### POST `/api/ai/hairstyle`
-
-Analyzes facial measurements and returns hairstyle recommendations.
-
-**Request Body:**
-```json
-{
-  "measurements": {
-    "faceLength": 220,
-    "jawWidth": 140,
-    "foreheadWidth": 150,
-    "cheekboneWidth": 160,
-    "lengthToWidthRatio": 1.57,
-    "jawToForeheadRatio": 0.93,
-    "cheekboneToJawRatio": 1.14
-  }
-}
-```
-
-**Response:**
-```json
-{
-  "faceShape": "Oval",
-  "confidence": "High",
-  "characteristics": "Your face shape is Oval...",
-  "recommendations": [
-    {
-      "style": "Half-Up, Half-Down",
-      "description": "...",
-      "whyItWorks": "...",
-      "bestFor": "Day wedding"
-    }
-  ]
-}
-```
-
-### GET `/api/ai/models`
-
-Lists available Gemini models for discovery.
-
-## 🎨 Design Philosophy
-
-LUNEVIA is designed with a focus on:
-- **Elegance**: Clean, luxurious UI inspired by bridal aesthetics
-- **Accessibility**: Easy-to-use interface for all users
-- **Privacy**: Client-side processing for user data protection
-- **Accuracy**: AI-powered analysis for personalized recommendations
-
-## 🚀 Future Enhancements
-
-- [ ] Virtual try-on with AR
-- [ ] Hairstyle gallery with pin functionality
-- [ ] Booking integration with salons
-- [ ] Multi-language support
-- [ ] Mobile app version
-- [ ] Advanced styling tips per face shape
-- [ ] Makeup recommendations
-
 
 ---
 
-**Happy Styling! 💇‍♀️✨**
+## 🌐 Live Demo
+
+**[luneviaa.vercel.app](https://luneviaa.vercel.app)**
+
+---
+
+## ⚠️ Current Limitations
+
+### Authentication
+- **Email / Password login only** — Sign in and sign up are currently handled via Supabase email + password authentication.
+- **Google OAuth** — Planned but not yet implemented.
+- **GitHub OAuth** — Planned but not yet implemented.
+
+---
+
+## 🔮 Future Implementations
+
+These features were planned as part of the product vision but are not yet built. They are listed here as the next milestone roadmap:
+
+### Booking Enhancements
+- **Stylist Selection** — Allow brides to choose a specific team member within a salon when booking.
+- **Trial Run Scheduling** — Add an option during the booking flow to schedule a pre-wedding trial appointment.
+- **Booking Rescheduling** — Let customers reschedule a confirmed booking directly from their dashboard.
+
+### AI Feature Upgrades
+- **AI Review Summarizer on Salon Pages** — Auto-generate a 2-sentence Gemini summary ("85 brides loved her work — customers consistently praise...") at the top of every salon's reviews section.
+- **Package Card Export** — Allow the AI Package Builder output to be exported as a beautiful screenshot-ready card that brides can save or share.
+- **Vernacular Concierge** — LUNÉVIA Concierge responds in Hindi when the user writes in Hindi (1-line system-prompt change).
+
+### Discovery & Matching
+- **Mehendi Style Matcher** — A gallery-based quiz (Rajasthani · Arabic · Indo-Western · Minimalist) that recommends a mehendi style and matching artists on the platform.
+- **Saved Salons Comparison** — Allow brides to compare 2 wishlisted salons side-by-side (price, rating, specialties).
+
+### Premium AI / AR Features
+- **AI Before/After Visualizer** — Upload a selfie → AI applies a makeup look preview using Replicate's SDXL or similar style-transfer model.
+- **Virtual Try-On (AR)** — Augmented reality bridal look preview using the device camera.
+
+### OAuth & Social Login
+- **Google Sign-In** — One-tap Google OAuth via Supabase social providers.
+- **GitHub Sign-In** — GitHub OAuth for developer-friendly access.
+
+### Platform & Operations
+- **Admin Dashboard** — Internal panel for verifying new artist applications and managing the "Verified Badge" status.
+- **Push Notifications** — Real-time booking alerts via browser push or WhatsApp when an artist confirms or declines.
+- **Multi-city Expansion** — Extend beyond Delhi to Mumbai, Bangalore, and other tier-1 cities.
+
+---
+
+*LUNÉVIA — Built for AI Startup Buildathon 2026. "Your most beautiful day, designed by AI."*
