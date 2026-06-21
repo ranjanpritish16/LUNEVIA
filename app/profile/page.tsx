@@ -67,7 +67,7 @@ export default function CustomerDashboardPage() {
         .eq("customer_id", user.id)
         .order("date", { ascending: true });
 
-      let savedSalonsPromise: Promise<any> = Promise.resolve({ data: [] });
+      let savedSalonsPromise: any = Promise.resolve({ data: [] });
       if (profileData?.saved_salons && profileData.saved_salons.length > 0) {
         savedSalonsPromise = supabase
           .from("salons")
@@ -134,7 +134,7 @@ export default function CustomerDashboardPage() {
       if (profileData?.location) {
         const bookedIds = fetchedBookings.map(b => b.salon_id);
         const savedIds = profileData?.saved_salons || [];
-        const excludeIds = [...new Set([...bookedIds, ...savedIds])];
+        const excludeIds = Array.from(new Set([...bookedIds, ...savedIds]));
 
         let recsQuery = supabase
           .from("salons")
