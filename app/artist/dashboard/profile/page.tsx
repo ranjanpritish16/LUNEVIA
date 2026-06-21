@@ -112,6 +112,40 @@ export default function ProfilePage() {
     await supabase.from("salons").update({ is_published: next }).eq("id", salonId);
   }
 
+  const [uploadingCover, setUploadingCover] = useState(false);
+
+  async function handleCoverUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    if (!salonId || !e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
+    
+    setUploadingCover(true);
+    
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+    const filePath = `${salonId}/cover_${fileName}`;
+
+    try {
+      const { error: uploadError } = await supabase.storage
+        .from('salon-covers')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        alert("Upload failed: " + uploadError.message);
+        throw uploadError;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('salon-covers')
+        .getPublicUrl(filePath);
+
+      setCoverImage(publicUrl);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setUploadingCover(false);
+    }
+  }
+
   if (loading) {
     return (
       <div className="space-y-6 p-6 sm:p-8">
@@ -208,8 +242,26 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        <div className="flex flex-col gap-1.5">
-          <label className="font-dm-sans text-xs text-charcoal/60">Cover image URL</label>
+        <div className="flex flex-col gap-3">
+          <label className="font-dm-sans text-xs text-charcoal/60">Cover image</label>
+          
+          <div className="flex items-center gap-3 border border-dashed border-gold/30 rounded-xl p-4 bg-cream/30">
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleCoverUpload}
+              disabled={uploadingCover}
+              className="block w-full text-sm text-charcoal file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-medium file:bg-gold file:text-white hover:file:bg-gold/90"
+            />
+            {uploadingCover && <span className="text-xs font-dm-sans text-primary shrink-0">Uploading...</span>}
+          </div>
+
+          <div className="flex items-center gap-4 py-1">
+            <div className="h-px flex-1 bg-gold/10"></div>
+            <span className="text-[10px] font-dm-sans text-charcoal/40 uppercase tracking-widest">OR PASTE URL</span>
+            <div className="h-px flex-1 bg-gold/10"></div>
+          </div>
+
           <input
             value={coverImage}
             onChange={(e) => setCoverImage(e.target.value)}
@@ -220,7 +272,7 @@ export default function ProfilePage() {
             <img
               src={coverImage}
               alt="Cover preview"
-              className="mt-2 h-32 w-full rounded-lg object-cover border border-gold/20"
+              className="mt-2 h-40 w-full rounded-xl object-cover border border-gold/20 shadow-sm"
             />
           )}
         </div>
