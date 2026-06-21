@@ -28,6 +28,7 @@ export interface ArtistSalon {
   gallery_images: string[] | null;
   services: any[] | null;
   team: any[] | null;
+  team_members?: any[];
   contact: Record<string, any> | null;
   working_hours: Record<string, any> | null;
   blocked_dates: string[] | null;
