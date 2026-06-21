@@ -86,6 +86,12 @@ export function DashboardShell({
       mobileVisible: true,
     },
     {
+      href: "/artist/dashboard/team",
+      label: "Team",
+      icon: <User size={18} />,
+      mobileVisible: false,
+    },
+    {
       href: "/artist/dashboard/portfolio",
       label: "Portfolio",
       icon: <Image size={18} />,

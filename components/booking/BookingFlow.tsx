@@ -3,7 +3,8 @@
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
+import { X } from "lucide-react";
 
 import { Badge } from "@/components/ui/Badge";
 import { LuneviaButton } from "@/components/ui/LuneviaButton";
@@ -23,20 +24,8 @@ const TIME_SLOTS = [
 
 const STEP_LABELS = ["Select Service", "Choose Time", "Confirmed"] as const;
 
-type TimeSlot = (typeof TIME_SLOTS)[number];
-
 interface BookingFlowProps {
   salon: Salon;
-}
-
-function getTakenSlots(slug: string): TimeSlot[] {
-  const hash = slug.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  const indexA = hash % TIME_SLOTS.length;
-  const indexB = (hash + 3) % TIME_SLOTS.length;
-  if (indexA === indexB) {
-    return [TIME_SLOTS[indexA], TIME_SLOTS[(indexA + 1) % TIME_SLOTS.length]];
-  }
-  return [TIME_SLOTS[indexA], TIME_SLOTS[indexB]];
 }
 
 function formatDate(date: Date): string {
@@ -100,8 +89,8 @@ function ProgressIndicator({ currentStep }: ProgressIndicatorProps) {
                     isCompleted && "border-gold bg-gold text-primary",
                     isActive && "border-gold bg-gold text-primary",
                     !isCompleted &&
-                      !isActive &&
-                      "border-gold/30 bg-transparent text-charcoal/40"
+                    !isActive &&
+                    "border-gold/30 bg-transparent text-charcoal/40"
                   )}
                 >
                   {isCompleted ? "✓" : stepNumber}
@@ -181,7 +170,7 @@ function CalendarPicker({ selectedDate, onSelect }: CalendarPickerProps) {
   ];
 
   return (
-    <div className="rounded-2xl border border-gold/20 bg-white p-5 shadow-warm">
+    <div className="rounded-2xl border border-gold/20 bg-white p-5 shadow-[0_4px_24px_rgba(201,147,58,0.08)]">
       <div className="mb-4 flex items-center justify-between">
         <h3 className="font-cormorant text-xl text-primary">{monthLabel}</h3>
         <div className="flex gap-1">
@@ -235,8 +224,8 @@ function CalendarPicker({ selectedDate, onSelect }: CalendarPickerProps) {
                 "flex h-9 w-full items-center justify-center rounded-full font-dm-sans text-sm transition-colors duration-[400ms]",
                 isSelected && "bg-gold font-medium text-primary",
                 !isSelected &&
-                  !isPast &&
-                  "text-charcoal hover:bg-blush hover:text-primary",
+                !isPast &&
+                "text-charcoal hover:bg-blush hover:text-primary",
                 isPast && "cursor-not-allowed text-charcoal/25"
               )}
             >
@@ -254,11 +243,12 @@ interface OrderSummaryProps {
   service: SalonService | null;
   date: Date | null;
   time: string | null;
+  staff?: { name: string; role: string } | null;
 }
 
-function OrderSummary({ salon, service, date, time }: OrderSummaryProps) {
+function OrderSummary({ salon, service, date, time, staff }: OrderSummaryProps) {
   return (
-    <div className="rounded-2xl border border-gold/20 bg-blush p-6 shadow-warm">
+    <div className="rounded-2xl border border-gold/20 bg-blush p-6 shadow-[0_4px_24px_rgba(201,147,58,0.08)]">
       <h3 className="font-cormorant text-2xl text-primary">Order Summary</h3>
       <dl className="mt-4 space-y-3 font-dm-sans text-sm">
         <div>
@@ -267,20 +257,22 @@ function OrderSummary({ salon, service, date, time }: OrderSummaryProps) {
         </div>
         <div>
           <dt className="text-charcoal/60">Service</dt>
-          <dd className="text-charcoal">
-            {service?.name ?? "—"}
-          </dd>
+          <dd className="text-charcoal">{service?.name ?? "—"}</dd>
         </div>
         <div>
           <dt className="text-charcoal/60">Date</dt>
-          <dd className="text-charcoal">
-            {date ? formatDateShort(date) : "—"}
-          </dd>
+          <dd className="text-charcoal">{date ? formatDateShort(date) : "—"}</dd>
         </div>
         <div>
           <dt className="text-charcoal/60">Time</dt>
           <dd className="text-charcoal">{time ?? "—"}</dd>
         </div>
+        {staff && (
+          <div>
+            <dt className="text-charcoal/60">Stylist</dt>
+            <dd className="font-medium text-gold">{staff.name}</dd>
+          </div>
+        )}
         <div className="border-t border-gold/20 pt-3">
           <dt className="text-charcoal/60">Total</dt>
           <dd className="font-cormorant text-2xl text-gold">
@@ -346,9 +338,13 @@ export function BookingFlow({ salon }: BookingFlowProps) {
 
   const [isBooking, setIsBooking] = useState(false);
 
-  const [takenSlots, setTakenSlots] = useState<string[]>([]);
+  // Staff selection
+  const [selectedStaff, setSelectedStaff] = useState<{ id: string; name: string; role: string; phone?: string; service_ids: string[] } | null>(null);
+  const [showStaffModal, setShowStaffModal] = useState(false);
+  const [pendingTimeSlot, setPendingTimeSlot] = useState<string | null>(null);
+  const [dayBookings, setDayBookings] = useState<{ time_slot: string; staff_id: string | null }[]>([]);
 
-  // Load customer profile
+  // Load customer profile so name/phone are pre-filled on repeat bookings
   useEffect(() => {
     async function loadProfile() {
       const { supabase } = await import("@/lib/supabase");
@@ -368,10 +364,11 @@ export function BookingFlow({ salon }: BookingFlowProps) {
     loadProfile();
   }, []);
 
-  // Fetch taken slots when date changes
+  // Fetch day bookings when date changes — used for smart staff availability
   useEffect(() => {
     if (!selectedDate) {
-      setTakenSlots([]);
+      setDayBookings([]);
+      setSelectedStaff(null);
       return;
     }
 
@@ -380,24 +377,68 @@ export function BookingFlow({ salon }: BookingFlowProps) {
       const { supabase } = await import("@/lib/supabase");
       const { data } = await supabase
         .from("bookings")
-        .select("time_slot")
+        .select("time_slot, staff_id")
         .eq("salon_id", salon.id)
         .eq("date", formatDateShort(selectedDate!))
         .in("status", ["pending", "confirmed"]);
 
       if (active && data) {
-        setTakenSlots(data.map((b) => b.time_slot));
+        setDayBookings(data);
       }
     }
     fetchSlots();
 
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, [selectedDate, salon.id]);
 
+  // Staff members capable of performing the selected service
+  const capableStaff = useMemo(() => {
+    if (!selectedService || !(salon as any).team_members?.length) return [];
+    return ((salon as any).team_members as any[]).filter(
+      (m: any) => Array.isArray(m.service_ids) && m.service_ids.includes(selectedService.id)
+    );
+  }, [selectedService, salon]);
+
+  // A slot is "Taken" only when ALL capable staff for the selected service are booked at that time.
+  // If no team is set up, fall back to the original salon-level conflict.
+  const takenSlots = useMemo(() => {
+    return TIME_SLOTS.filter((slot) => {
+      const bookingsInSlot = dayBookings.filter((b) => b.time_slot === slot);
+      if (bookingsInSlot.length === 0) return false;
+      if (capableStaff.length === 0) return true; // no staff → old behaviour
+      const bookedStaffIds = bookingsInSlot.map((b) => b.staff_id).filter(Boolean);
+      return capableStaff.every((s: any) => bookedStaffIds.includes(s.id));
+    });
+  }, [dayBookings, capableStaff]);
+
+  // When the bride clicks a time slot
+  const handleTimeSlotClick = useCallback((slot: string) => {
+    if (capableStaff.length === 0) {
+      setSelectedTime(slot);
+      setSelectedStaff(null);
+      return;
+    }
+    const bookedStaffIds = dayBookings
+      .filter((b) => b.time_slot === slot)
+      .map((b) => b.staff_id);
+    const available = capableStaff.filter((s: any) => !bookedStaffIds.includes(s.id));
+    setPendingTimeSlot(slot);
+    setShowStaffModal(true);
+    // store available in local var – passed to modal via state below
+    setDayBookings((prev) => prev); // trigger memo only if needed — actual list derived below
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [capableStaff, dayBookings]);
+
+  const availableStaffForPendingSlot = useMemo(() => {
+    if (!pendingTimeSlot || capableStaff.length === 0) return [];
+    const bookedStaffIds = dayBookings
+      .filter((b) => b.time_slot === pendingTimeSlot)
+      .map((b) => b.staff_id);
+    return capableStaff.filter((s: any) => !bookedStaffIds.includes(s.id));
+  }, [pendingTimeSlot, capableStaff, dayBookings]);
+
   const canContinueStep1 = selectedService !== null && selectedDate !== null;
-  const canConfirmStep2 = selectedTime !== null;
+  const canConfirmStep2 = selectedTime !== null && (capableStaff.length === 0 || selectedStaff !== null);
 
   async function handleConfirmBooking() {
     if (!selectedService || !selectedDate || !selectedTime) return;
@@ -407,10 +448,9 @@ export function BookingFlow({ salon }: BookingFlowProps) {
     const { data: { user } } = await supabase.auth.getUser();
 
     if (user) {
-      const finalName = customerName.trim() || user.email?.split("@")[0] || "Customer";
+      const finalName = customerName.trim() || user.user_metadata?.full_name || "Customer";
       const finalPhone = customerPhone.trim() || null;
 
-      // 1. Save booking
       const { error } = await supabase.from("bookings").insert({
         salon_id: salon.id,
         customer_id: user.id,
@@ -421,7 +461,11 @@ export function BookingFlow({ salon }: BookingFlowProps) {
         time_slot: selectedTime,
         total_amount: parseInt(String(selectedService.price).replace(/\D/g, "")) || 0,
         status: "pending",
+        staff_id: selectedStaff?.id ?? null,
+        staff_name: selectedStaff?.name ?? null,
+        staff_phone: selectedStaff?.phone ?? null,
       });
+
       if (error) {
         console.error("Booking insert error:", error);
         alert(`Error: ${error.message}`);
@@ -429,7 +473,7 @@ export function BookingFlow({ salon }: BookingFlowProps) {
         return;
       }
 
-      // 2. Auto-save profile so they don't have to enter it again
+      // Auto-save profile so the bride doesn't have to re-enter details next time
       await supabase.from("profiles").upsert({
         id: user.id,
         full_name: customerName,
@@ -485,7 +529,7 @@ export function BookingFlow({ salon }: BookingFlowProps) {
                           className={cn(
                             "flex w-full items-start justify-between gap-3 rounded-2xl border p-4 text-left transition-all duration-[400ms]",
                             isSelected
-                              ? "border-gold bg-gold/5 shadow-warm"
+                              ? "border-gold bg-gold/5 shadow-[0_4px_24px_rgba(201,147,58,0.08)]"
                               : "border-gold/20 bg-white hover:border-gold/40"
                           )}
                         >
@@ -564,16 +608,16 @@ export function BookingFlow({ salon }: BookingFlowProps) {
                         key={slot}
                         type="button"
                         disabled={isTaken}
-                        onClick={() => setSelectedTime(slot)}
+                        onClick={() => handleTimeSlotClick(slot)}
                         className={cn(
                           "relative rounded-full border px-3 py-3 font-dm-sans text-sm transition-all duration-[400ms]",
                           isSelected &&
-                            "border-gold bg-gold font-medium text-primary",
+                          "border-gold bg-gold font-medium text-primary",
                           !isSelected &&
-                            !isTaken &&
-                            "border-gold/20 bg-white text-charcoal hover:border-gold/50",
+                          !isTaken &&
+                          "border-gold/20 bg-white text-charcoal hover:border-gold/50",
                           isTaken &&
-                            "cursor-not-allowed border-gold/10 bg-charcoal/5 text-charcoal/30"
+                          "cursor-not-allowed border-gold/10 bg-charcoal/5 text-charcoal/30"
                         )}
                       >
                         {slot}
@@ -594,6 +638,7 @@ export function BookingFlow({ salon }: BookingFlowProps) {
                   service={selectedService}
                   date={selectedDate}
                   time={selectedTime}
+                  staff={selectedStaff}
                 />
               </div>
             </div>
@@ -627,7 +672,7 @@ export function BookingFlow({ salon }: BookingFlowProps) {
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ duration: 0.5, ease: "easeOut", delay: 0.1 }}
-              className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-gold text-3xl text-primary shadow-warm"
+              className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-gold text-3xl text-primary shadow-[0_4px_24px_rgba(201,147,58,0.08)]"
             >
               ✓
             </motion.div>
@@ -640,7 +685,7 @@ export function BookingFlow({ salon }: BookingFlowProps) {
               closer to your appointment.
             </p>
 
-            <div className="mx-auto mt-10 max-w-md rounded-2xl border border-gold/20 bg-white p-8 text-left shadow-warm">
+            <div className="mx-auto mt-10 max-w-md rounded-2xl border border-gold/20 bg-white p-8 text-left shadow-[0_4px_24px_rgba(201,147,58,0.08)]">
               <h3 className="font-cormorant text-2xl text-primary">
                 {salon.name}
               </h3>
@@ -672,6 +717,19 @@ export function BookingFlow({ salon }: BookingFlowProps) {
                     {selectedTime ?? "—"}
                   </span>
                 </div>
+                {selectedStaff && (
+                  <div className="flex justify-between gap-4">
+                    <span className="text-charcoal/60">Stylist</span>
+                    <div className="text-right">
+                      <span className="font-medium text-gold block">{selectedStaff.name}</span>
+                      {selectedStaff.phone && (
+                        <a href={`tel:${selectedStaff.phone}`} className="text-xs text-charcoal/50 hover:text-gold transition-colors">
+                          📞 {selectedStaff.phone}
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                )}
                 <div className="flex items-end justify-between gap-4 border-t border-gold/20 pt-4">
                   <span className="text-charcoal/60">Total</span>
                   <span className="font-cormorant text-3xl text-gold">
@@ -699,6 +757,57 @@ export function BookingFlow({ salon }: BookingFlowProps) {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Staff Selection Modal */}
+      {showStaffModal && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 40 }}
+            className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl"
+          >
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="font-cormorant text-2xl text-primary">Choose Your Stylist</h3>
+              <button
+                onClick={() => { setShowStaffModal(false); setPendingTimeSlot(null); }}
+                className="text-charcoal/40 hover:text-primary transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <p className="font-dm-sans text-xs text-charcoal/50 mb-5">
+              Available for {pendingTimeSlot}
+            </p>
+            <div className="space-y-3">
+              {availableStaffForPendingSlot.map((staff: any) => (
+                <button
+                  key={staff.id}
+                  onClick={() => {
+                    setSelectedStaff(staff);
+                    setSelectedTime(pendingTimeSlot);
+                    setShowStaffModal(false);
+                    setPendingTimeSlot(null);
+                  }}
+                  className="w-full text-left p-4 rounded-xl border border-gold/20 hover:border-gold hover:bg-gold/5 transition-all duration-300 flex items-center justify-between group"
+                >
+                  <div>
+                    <p className="font-dm-sans font-semibold text-primary">{staff.name}</p>
+                    <p className="text-xs text-gold mt-0.5">{staff.role}</p>
+                    {staff.phone && (
+                      <p className="text-xs text-charcoal/50 mt-0.5">📞 {staff.phone}</p>
+                    )}
+                  </div>
+                  <span className="text-gold text-sm opacity-0 group-hover:opacity-100 transition-opacity">Select →</span>
+                </button>
+              ))}
+            </div>
+            {availableStaffForPendingSlot.length === 0 && (
+              <p className="text-center text-sm text-charcoal/50 py-4">No staff available at this time.</p>
+            )}
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }

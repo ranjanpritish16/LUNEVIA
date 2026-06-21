@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { Plus, X, CheckCircle2 } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 
 const SPECIALTY_OPTIONS = ["Bridal Makeup", "Mehendi", "Hair Styling", "Pre-Bridal Packages"];
 const PRICE_OPTIONS = ["₹", "₹₹", "₹₹₹"];
@@ -25,7 +25,6 @@ export default function ProfilePage() {
   const [email, setEmail] = useState("");
   const [instagram, setInstagram] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
-  const [team, setTeam] = useState<{ name: string; role: string }[]>([]);
   const [isPublished, setIsPublished] = useState(false);
 
   useEffect(() => {
@@ -56,7 +55,6 @@ export default function ProfilePage() {
       setEmail(data.contact?.email ?? "");
       setInstagram(data.contact?.instagram ?? "");
       setWhatsapp(data.contact?.whatsapp ?? "");
-      setTeam(data.team ?? []);
       setIsPublished(data.is_published ?? false);
     }
     setLoading(false);
@@ -66,20 +64,6 @@ export default function ProfilePage() {
     setSpecialty((prev) =>
       prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
     );
-  }
-
-  function addTeamMember() {
-    setTeam((prev) => [...prev, { name: "", role: "" }]);
-  }
-
-  function updateTeamMember(index: number, field: "name" | "role", value: string) {
-    setTeam((prev) =>
-      prev.map((m, i) => (i === index ? { ...m, [field]: value } : m))
-    );
-  }
-
-  function removeTeamMember(index: number) {
-    setTeam((prev) => prev.filter((_, i) => i !== index));
   }
 
   async function handleSave() {
@@ -99,7 +83,6 @@ export default function ProfilePage() {
         price_range: priceRange,
         cover_image: coverImage,
         contact: { phone, email, instagram, whatsapp },
-        team,
       })
       .eq("id", salonId);
 
@@ -385,48 +368,6 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* Team */}
-      <div className="rounded-2xl border border-gold/20 bg-white p-6 space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="font-cormorant text-xl text-primary">Team members</h2>
-          <button
-            onClick={addTeamMember}
-            className="flex items-center gap-1 font-dm-sans text-xs text-gold hover:text-gold/80"
-          >
-            <Plus size={14} /> Add member
-          </button>
-        </div>
-
-        {team.length === 0 ? (
-          <p className="font-dm-sans text-xs text-charcoal/40">No team members added yet.</p>
-        ) : (
-          <div className="space-y-3">
-            {team.map((member, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <input
-                  value={member.name}
-                  onChange={(e) => updateTeamMember(i, "name", e.target.value)}
-                  placeholder="Name"
-                  className="flex-1 rounded-lg border border-gold/20 px-3 py-2 font-dm-sans text-sm text-charcoal focus:border-gold focus:outline-none"
-                />
-                <input
-                  value={member.role}
-                  onChange={(e) => updateTeamMember(i, "role", e.target.value)}
-                  placeholder="Role, e.g. Lead Makeup Artist"
-                  className="flex-1 rounded-lg border border-gold/20 px-3 py-2 font-dm-sans text-sm text-charcoal focus:border-gold focus:outline-none"
-                />
-                <button
-                  onClick={() => removeTeamMember(i)}
-                  aria-label="Remove team member"
-                  className="text-charcoal/40 hover:text-rose"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
 
       {/* Save */}
       <div className="flex items-center gap-4 pb-4">

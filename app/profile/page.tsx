@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { SalonCard } from "@/components/ui/SalonCard";
-import { CheckCircle2, LogOut, CalendarDays, Clock, Wallet, Heart, Sparkles } from "lucide-react";
+import { CheckCircle2, LogOut, CalendarDays, Clock, Wallet, Heart, Sparkles, User } from "lucide-react";
 
 // Helper for status badge colors
 const STATUS_COLORS: Record<string, string> = {
@@ -290,6 +290,20 @@ export default function CustomerDashboardPage() {
                             <span className="flex items-center gap-1.5"><Clock size={14} className="text-gold" /> {b.time_slot}</span>
                             {b.total_amount && <span className="flex items-center gap-1.5"><Wallet size={14} className="text-gold" /> ₹{Number(b.total_amount).toLocaleString("en-IN")}</span>}
                           </div>
+                          {b.staff_name && (
+                            <div className="mt-3 flex items-center gap-2 rounded-xl bg-blush px-3 py-2">
+                              <User size={13} className="text-gold shrink-0" />
+                              <span className="font-dm-sans text-xs text-primary font-medium">{b.staff_name}</span>
+                              {b.staff_phone && (
+                                <a
+                                  href={`tel:${b.staff_phone}`}
+                                  className="ml-auto font-dm-sans text-xs text-gold hover:underline"
+                                >
+                                  📞 {b.staff_phone}
+                                </a>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
                     );
