@@ -53,6 +53,8 @@ The core feature of LUNEVIA:
 
 ### 3. **Explore Page** (`/explore`)
 Browse and discover bridal hairstyles:
+- **URL-Aware Search**: Automatically reads `?q=` parameters to initialize the search state, allowing users to share search links directly.
+- **SalonCards with Maps**: Features beautiful display cards with a 'Map' shortcut button that directly opens the salon's Google Maps location in a new tab (utilizing `e.stopPropagation()` to prevent accidental card navigation).
 - **Hairstyle Gallery**: Browse all available hairstyle recommendations
 - **Filter Options**: Filter by:
   - Face shape (Oval, Round, Square, etc.)
@@ -72,7 +74,8 @@ Intelligent AI assistant available throughout the app:
 - **FAQs**: Common questions answered by AI
 - **Booking Assistance**: Help finding and booking stylists
 - **Real-time Responses**: Powered by Google Gemini
-- **Context-Aware**: Remembers your face shape and preferences
+- **Context-Aware**: Remembers the user's previously analyzed face shape to offer continuous personalized styling advice.
+- **Booking Assistance**: Recommends actual salons and artists based on the prompt.
 
 **Features:**
 - Always available widget in bottom corner
@@ -102,24 +105,22 @@ Comprehensive salon information:
 - **Services Menu**: All offered services with pricing
 - **Artists**: List of stylists available at the salon
 - **Portfolio**: Photo gallery of previous work
-- **Customer Reviews**: Ratings and testimonials
+- **Interactive Salon Reviews**: Displays community ratings dynamically. Features an interactive 5-star UI where users click the Nth star to set their rating, filling all stars to the left with gold. Automatically fetches and displays the user's full name (rather than their raw email) for a premium feel.
 - **Booking Button**: Direct link to book appointments
 - **Business Hours**: Operating hours and availability
 - **Contact Info**: Phone, email, website links
+- **Maps Integration**: One-click Google Maps navigation directly to the salon
 
 **Component:** `SalonDetailPage.tsx`  
 **Data Source:** `lib/data/salons.ts`
 
 ### 7. **Booking Page** (`/book/[slug]`)
-Complete booking management system:
-- **Booking Flow**: Step-by-step booking process
-- **Service Selection**: Choose hairstyle or package
-- **Date/Time Selection**: Pick available booking slots with conflict prevention
-- **Stylist Selection**: Choose preferred artist
-- **Trial Run Options**: Schedule pre-wedding trial
-- **Special Requirements**: Add notes and preferences
-- **Payment Integration**: Secure booking confirmation
-- **Booking Confirmation**: Confirmation details and calendar invite
+Complete, conflict-free booking management system:
+- **3-Step Interactive Booking Flow**: A seamless, modern wizard interface (Select Service → Choose Time → Confirmation).
+- **Service Selection**: Browse and select specific hairstyles or packages directly from the salon's dynamic menu.
+- **Calendar & Time Selection**: Choose from available dates and time slots with an intuitive calendar UI.
+- **Real-Time Conflict Prevention**: The system instantly checks the Supabase database to disable time slots that have already been booked or confirmed by the artist.
+- **Auto-Profile Generation**: Automatically securely saves the customer's name and phone number to their user profile upon booking, preventing repetitive data entry for future bookings.
 
 **Component:** `BookingFlow.tsx`
 
@@ -127,16 +128,17 @@ Complete booking management system:
 Community-driven feedback system:
 - **Testimonial Display**: Real-time display of user feedback
 - **Review Submission**: Frictionless form for brides to leave website feedback
-- **Rating System**: 5-star rating integration
+- **Interactive Rating System**: Dynamic 5-star UI for precise feedback submission
 - **Database Integration**: Fully connected to live Supabase `site_reviews` table
 
 **Component:** `PlatformReviewsPage.tsx`
 
 ### 9. **Artist Dashboard** (`/artist/dashboard`)
 Complete management portal for makeup artists:
-- **Profile Management**: Update salon details, pricing, and bio
+- **Profile Management**: Update salon details, pricing, map location, and bio
 - **Availability Editor**: Set working hours and block off dates
-- **Bookings Portal**: View, confirm, and decline customer bookings in real-time
+- **Bookings Portal**: Real-time management with auto-completion logic based on service duration
+- **Payment Tracking**: Integrated tracking for partial and full payments
 - **Reviews Tracker**: Monitor client feedback with auto-updating reputation scores
 - **Portfolio Uploader**: Native Supabase Storage integration for direct device-to-database photo uploads
 
@@ -158,7 +160,12 @@ Complete management portal for makeup artists:
 
 **Components:** `Navbar.tsx`, `Footer.tsx`
 
-### 11. **UI Components Library**
+### 11. **Authentication & Smart Onboarding**
+- **Seamless Login**: Email/phone sign-in via Supabase Auth.
+- **Smart Auth Redirect**: Automatically detects if a user is logging in for the first time. If their profile is incomplete, it bypasses the homepage and instantly redirects them to the profile completion section to ensure clean data collection.
+- **User Profile**: Complete identity management, wedding date tracking, and a dynamic view of saved/wishlisted salons.
+
+### 12. **UI Components Library**
 Reusable components used throughout:
 - **LuneviaButton**: Custom styled buttons with hover effects
 - **Badge**: Labels for face shapes, occasions, and tags
