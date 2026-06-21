@@ -80,11 +80,12 @@ export default function ArtistBookingsPage() {
         let durationHours = 0;
         
         if (durationStr !== "ongoing") {
-          const match = durationStr.match(/(\d+)/);
-          if (match) durationHours = parseInt(match[1], 10);
+          // Support decimal hours like "0.5 hrs"
+          const match = durationStr.match(/(\d+(\.\d+)?)/);
+          if (match) durationHours = parseFloat(match[1]);
         }
 
-        // Even if we don't have duration hours, we add 4 hours by default as buffer if parsing fails
+        // Even if we don't have duration hours, we add 4 hours by default as buffer if parsing fails completely
         if (durationHours === 0 && durationStr !== "ongoing") {
           durationHours = 4;
         }
