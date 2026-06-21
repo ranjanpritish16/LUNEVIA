@@ -69,7 +69,42 @@ export default function ArtistBookingsPage() {
       .eq("salon_id", salonData.id)
       .order("created_at", { ascending: false });
 
-    setBookings(data || []);
+    // Auto-update confirmed bookings to completed if their time has passed
+    const now = new Date();
+    const servicesData = salonData.services ?? [];
+    
+    const processedData = (data || []).map((b) => {
+      if (b.status === "confirmed" && b.date && b.time) {
+        const service = servicesData.find((s: any) => s.id === b.service_id);
+        const durationStr = service?.duration || "";
+        let durationHours = 0;
+        
+        if (durationStr !== "ongoing") {
+          const match = durationStr.match(/(\d+)/);
+          if (match) durationHours = parseInt(match[1], 10);
+        }
+
+        // Even if we don't have duration hours, we add 4 hours by default as buffer if parsing fails
+        if (durationHours === 0 && durationStr !== "ongoing") {
+          durationHours = 4;
+        }
+
+        if (durationHours > 0) {
+          const bookingDate = new Date(`${b.date} ${b.time}`);
+          if (!isNaN(bookingDate.getTime())) {
+            const completionDate = new Date(bookingDate.getTime() + durationHours * 60 * 60 * 1000);
+            if (now > completionDate) {
+              b.status = "completed";
+              // Fire and forget background DB update
+              supabase.from("bookings").update({ status: "completed" }).eq("id", b.id).then();
+            }
+          }
+        }
+      }
+      return b;
+    });
+
+    setBookings(processedData);
     setLoading(false);
   }
 
