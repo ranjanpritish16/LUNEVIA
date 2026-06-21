@@ -265,7 +265,7 @@ export default function CustomerDashboardPage() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {bookings.map((b) => {
+                  {bookings.filter(b => b.status !== "declined").map((b) => {
                     const salonServices = b.salons?.services || [];
                     const matchedService = salonServices.find((s: any) => s.id === b.service_id);
                     const serviceName = matchedService ? matchedService.name : "Custom Service";
@@ -427,11 +427,11 @@ export default function CustomerDashboardPage() {
             {/* 4.1 Transactions & Payments */}
             <section className="rounded-2xl border border-gold/20 bg-white p-6">
               <h2 className="font-cormorant text-2xl text-primary mb-4">Transactions</h2>
-              {allBookings.filter(b => b.total_amount).length === 0 ? (
+              {allBookings.filter(b => b.total_amount && (b.status === "confirmed" || b.status === "completed")).length === 0 ? (
                 <p className="font-dm-sans text-xs text-charcoal/50 text-center py-4">No payments recorded yet.</p>
               ) : (
                 <div className="space-y-4">
-                  {allBookings.filter(b => b.total_amount).map((b) => {
+                  {allBookings.filter(b => b.total_amount && (b.status === "confirmed" || b.status === "completed")).map((b) => {
                     const hasPaidField = b.amount_paid !== undefined && b.amount_paid !== null;
                     const paid = Number(b.amount_paid) || 0;
                     const total = Number(b.total_amount);
