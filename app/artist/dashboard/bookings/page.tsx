@@ -74,7 +74,7 @@ export default function ArtistBookingsPage() {
     const servicesData = salonData.services ?? [];
     
     const processedData = (data || []).map((b) => {
-      if (b.status === "confirmed" && b.date && b.time) {
+      if (b.status === "confirmed" && b.date && b.time_slot) {
         const service = servicesData.find((s: any) => s.id === b.service_id);
         const durationStr = service?.duration || "";
         let durationHours = 0;
@@ -91,7 +91,7 @@ export default function ArtistBookingsPage() {
         }
 
         if (durationHours > 0) {
-          const bookingDate = new Date(`${b.date} ${b.time}`);
+          const bookingDate = new Date(`${b.date} ${b.time_slot}`);
           if (!isNaN(bookingDate.getTime())) {
             const completionDate = new Date(bookingDate.getTime() + durationHours * 60 * 60 * 1000);
             if (now > completionDate) {
