@@ -16,6 +16,7 @@ export default function ProfilePage() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [location, setLocation] = useState("");
+  const [mapUrl, setMapUrl] = useState("");
   const [locality, setLocality] = useState("");
   const [specialty, setSpecialty] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState("₹₹");
@@ -46,6 +47,7 @@ export default function ProfilePage() {
       setName(data.name ?? "");
       setDescription(data.description ?? "");
       setLocation(data.location ?? "");
+      setMapUrl(data.map_url ?? "");
       setLocality(data.locality ?? "");
       setSpecialty(data.specialty ?? []);
       setPriceRange(data.price_range ?? "₹₹");
@@ -91,6 +93,7 @@ export default function ProfilePage() {
         name,
         description,
         location,
+        map_url: mapUrl,
         locality,
         specialty,
         price_range: priceRange,
@@ -240,6 +243,29 @@ export default function ProfilePage() {
               className="rounded-lg border border-gold/20 px-3 py-2.5 font-dm-sans text-sm text-charcoal focus:border-gold focus:outline-none"
             />
           </div>
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <div className="flex justify-between items-end">
+            <label className="font-dm-sans text-xs text-charcoal/60">Google Maps Link</label>
+            <a 
+              href="https://www.google.com/maps" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-[10px] text-gold hover:text-gold/80 flex items-center gap-1 font-dm-sans"
+            >
+              Find on Google Maps
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3" />
+              </svg>
+            </a>
+          </div>
+          <input
+            value={mapUrl}
+            onChange={(e) => setMapUrl(e.target.value)}
+            placeholder="Paste your exact Google Maps URL here"
+            className="rounded-lg border border-gold/20 px-3 py-2.5 font-dm-sans text-sm text-charcoal focus:border-gold focus:outline-none"
+          />
         </div>
 
         <div className="flex flex-col gap-3">

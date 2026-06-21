@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 import { OrnamentalDivider } from "@/components/landing/OrnamentalDivider";
 import { LuneviaButton } from "@/components/ui/LuneviaButton";
@@ -31,6 +32,17 @@ function SearchIcon() {
 
 export function HeroSection() {
   const router = useRouter();
+
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      router.push(`/explore?q=${encodeURIComponent(searchQuery)}`);
+    } else {
+      router.push("/explore");
+    }
+  };
 
   return (
     <section
@@ -82,11 +94,13 @@ export function HeroSection() {
           <form
             role="search"
             className="flex items-center gap-2 rounded-full border border-gold bg-white py-1.5 pl-4 pr-1.5 shadow-warm"
-            onSubmit={(e) => e.preventDefault()}
+            onSubmit={handleSearch}
           >
             <SearchIcon />
             <input
               type="search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Find your perfect bridal artist..."
               className="min-w-0 flex-1 bg-transparent font-dm-sans text-sm text-primary placeholder:text-charcoal/40 focus:outline-none"
               aria-label="Search bridal artists"

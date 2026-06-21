@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 
@@ -75,19 +75,40 @@ export function Navbar() {
   const [user, setUser] = useState<User | null>(null);
   const router = useRouter();
 
+  const pathname = usePathname();
+
   useEffect(() => {
+    const checkProfileCompletion = async (currentUser: User | null) => {
+      if (currentUser && pathname !== "/profile") {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("full_name, role")
+          .eq("id", currentUser.id)
+          .single();
+        
+        // If it's a customer and they haven't set their name, redirect to profile settings
+        if (profile && profile.role !== "artist" && !profile.full_name) {
+          router.push("/profile");
+        }
+      }
+    };
+
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+      checkProfileCompletion(currentUser);
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+      checkProfileCompletion(currentUser);
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [pathname, router]);
 
   const handleProfileClick = () => {
     if (user) {

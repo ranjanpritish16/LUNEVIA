@@ -22,6 +22,9 @@ export default function ArtistBookingsPage() {
   const [filter, setFilter] = useState<Filter>("All");
   const [decliningId, setDecliningId] = useState<string | null>(null);
   const [declineReason, setDeclineReason] = useState("");
+  
+  const [updatingPaymentId, setUpdatingPaymentId] = useState<string | null>(null);
+  const [paymentAmount, setPaymentAmount] = useState("");
 
   useEffect(() => {
     fetchBookings();
@@ -82,6 +85,26 @@ export default function ArtistBookingsPage() {
       .eq("id", id);
     setDecliningId(null);
     setDeclineReason("");
+    fetchBookings();
+  }
+
+  async function confirmPaymentUpdate(id: string) {
+    const amount = Number(paymentAmount) || 0;
+    await supabase
+      .from("bookings")
+      .update({ amount_paid: amount })
+      .eq("id", id);
+    setUpdatingPaymentId(null);
+    setPaymentAmount("");
+    fetchBookings();
+  }
+
+  async function handleToggleFullyPaid(id: string, isChecked: boolean, totalAmount: number) {
+    const newAmount = isChecked ? Number(totalAmount) : 0;
+    await supabase
+      .from("bookings")
+      .update({ amount_paid: newAmount })
+      .eq("id", id);
     fetchBookings();
   }
 
@@ -213,6 +236,42 @@ export default function ArtistBookingsPage() {
                     </button>
                   </div>
                 )}
+                
+                {(b.status === "confirmed" || b.status === "completed") && (
+                  <div className="flex flex-col items-end flex-shrink-0 gap-2">
+                    {b.amount_paid != null && (
+                      <p className="font-dm-sans text-xs text-charcoal/60">
+                        Paid: ₹{Number(b.amount_paid).toLocaleString("en-IN")}
+                      </p>
+                    )}
+                    
+                    <div className="flex items-center gap-3">
+                      {b.total_amount != null && (
+                        <label className="flex items-center gap-1.5 cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            checked={Number(b.amount_paid) >= Number(b.total_amount)}
+                            onChange={(e) => handleToggleFullyPaid(b.id, e.target.checked, b.total_amount)}
+                            className="accent-gold w-3.5 h-3.5 rounded border-gold/40 cursor-pointer"
+                          />
+                          <span className="font-dm-sans text-xs text-charcoal/70 select-none">Fully Paid</span>
+                        </label>
+                      )}
+
+                      {(!b.total_amount || Number(b.amount_paid) < Number(b.total_amount)) && (
+                        <button
+                          onClick={() => {
+                            setUpdatingPaymentId(b.id);
+                            setPaymentAmount(b.amount_paid?.toString() || "");
+                          }}
+                          className="rounded-full border border-gold/40 px-3 py-1 font-dm-sans text-xs font-medium text-gold hover:bg-gold/5"
+                        >
+                          Update Payment
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {decliningId === b.id && (
@@ -234,6 +293,36 @@ export default function ArtistBookingsPage() {
                       onClick={() => {
                         setDecliningId(null);
                         setDeclineReason("");
+                      }}
+                      className="rounded-full border border-gold/20 px-4 py-2 font-dm-sans text-xs text-charcoal/60 hover:border-gold/50"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {updatingPaymentId === b.id && (
+                <div className="mt-4 flex flex-col gap-2 border-t border-gold/10 pt-4 sm:flex-row sm:items-center">
+                  <label className="font-dm-sans text-sm text-charcoal/60 whitespace-nowrap">Amount Paid (₹):</label>
+                  <input
+                    type="number"
+                    value={paymentAmount}
+                    onChange={(e) => setPaymentAmount(e.target.value)}
+                    placeholder={`e.g. ${b.total_amount ? Number(b.total_amount) / 2 : 5000}`}
+                    className="flex-1 rounded-lg border border-gold/20 px-3 py-2 font-dm-sans text-sm text-charcoal focus:border-gold focus:outline-none"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => confirmPaymentUpdate(b.id)}
+                      className="rounded-full bg-green-600 px-4 py-2 font-dm-sans text-xs font-medium text-white hover:bg-green-700"
+                    >
+                      Save Payment
+                    </button>
+                    <button
+                      onClick={() => {
+                        setUpdatingPaymentId(null);
+                        setPaymentAmount("");
                       }}
                       className="rounded-full border border-gold/20 px-4 py-2 font-dm-sans text-xs text-charcoal/60 hover:border-gold/50"
                     >

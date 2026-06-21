@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { motion } from "framer-motion";
+import { Star } from "lucide-react";
 
 const HARDCODED_TESTIMONIALS = [
   {
@@ -47,7 +48,8 @@ export default function PlatformReviewsPage() {
   const [reviews, setReviews] = useState<any[]>(HARDCODED_TESTIMONIALS);
   const [name, setName] = useState("");
   const [location, setLocation] = useState("");
-  const [rating, setRating] = useState(5);
+  const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
   const [comment, setComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -96,7 +98,7 @@ export default function PlatformReviewsPage() {
     setName("");
     setLocation("");
     setComment("");
-    setRating(5);
+    setRating(0);
     fetchReviews(); // Refresh the list
   }
 
@@ -153,18 +155,23 @@ export default function PlatformReviewsPage() {
               </div>
 
               <div>
-                <label className="block font-dm-sans text-xs uppercase tracking-wider text-charcoal/60 mb-1">Rating</label>
-                <select
-                  value={rating}
-                  onChange={(e) => setRating(Number(e.target.value))}
-                  className="w-full rounded-xl border border-gold/20 bg-cream/50 px-4 py-2 font-dm-sans text-sm focus:border-gold focus:outline-none"
-                >
-                  <option value={5}>5 Stars - Perfect</option>
-                  <option value={4}>4 Stars - Great</option>
-                  <option value={3}>3 Stars - Good</option>
-                  <option value={2}>2 Stars - Okay</option>
-                  <option value={1}>1 Star - Poor</option>
-                </select>
+                <label className="block font-dm-sans text-xs uppercase tracking-wider text-charcoal/60 mb-2">Rating</label>
+                <div className="flex gap-1 mb-2" onMouseLeave={() => setHoverRating(0)}>
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setRating(star)}
+                      onMouseEnter={() => setHoverRating(star)}
+                      className="focus:outline-none transition-transform hover:scale-110 active:scale-95"
+                    >
+                      <Star 
+                        size={28} 
+                        className={`${(hoverRating || rating) >= star ? "fill-gold text-gold" : "text-gold/30"} transition-colors`} 
+                      />
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div>
@@ -181,7 +188,7 @@ export default function PlatformReviewsPage() {
 
               <button
                 type="submit"
-                disabled={submitting}
+                disabled={submitting || rating === 0}
                 className="w-full rounded-full bg-primary px-4 py-3 font-dm-sans text-sm font-medium text-white transition-colors hover:bg-gold disabled:opacity-50"
               >
                 {submitting ? "Submitting..." : "Publish Review"}

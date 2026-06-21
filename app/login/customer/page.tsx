@@ -34,7 +34,7 @@ function CustomerLoginContent() {
         // Check the user's role
         const { data: profile } = await supabase
           .from("profiles")
-          .select("role")
+          .select("role, full_name")
           .eq("id", data.user.id)
           .single();
 
@@ -46,8 +46,12 @@ function CustomerLoginContent() {
           });
           await supabase.auth.signOut();
         } else {
-          // role === 'customer' or null/undefined — treat as customer
-          router.replace(nextUrl);
+          // If profile is incomplete, force them to profile page
+          if (!profile?.full_name) {
+            router.replace("/profile");
+          } else {
+            router.replace(nextUrl);
+          }
         }
       }
     } else if (mode === "signup") {

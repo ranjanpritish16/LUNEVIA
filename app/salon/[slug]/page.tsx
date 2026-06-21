@@ -3,24 +3,31 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { X, ZoomIn, ZoomOut, Star } from "lucide-react";
 
 export default function SalonPage() {
   const { slug } = useParams();
   const [salon, setSalon] = useState<any>(null);
   const [reviews, setReviews] = useState<any[]>([]);
   const [user, setUser] = useState<any>(null);
-  const [rating, setRating] = useState(5);
+  const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
   const [comment, setComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [zoomLevel, setZoomLevel] = useState(1);
 
   useEffect(() => {
     async function load() {
+      setIsLoading(true);
       const { data: salonData } = await supabase
         .from("salons")
         .select("*")
         .eq("slug", slug)
         .single();
+      
       setSalon(salonData);
 
       if (salonData) {
@@ -34,6 +41,17 @@ export default function SalonPage() {
 
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
+      setIsLoading(false);
+      
+      // Handle hash scrolling after data loads
+      setTimeout(() => {
+        if (window.location.hash === '#reviews') {
+          const el = document.getElementById('reviews');
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth' });
+          }
+        }
+      }, 100);
     }
     load();
   }, [slug]);
@@ -41,12 +59,22 @@ export default function SalonPage() {
   async function submitReview() {
     if (!user || !salon) return;
     setSubmitting(true);
+
+    // Fetch the customer's full name from their profile
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("id", user.id)
+      .single();
+    
+    const authorName = profile?.full_name || user.email.split('@')[0];
+
     const { error } = await supabase.from("reviews").insert({
       salon_id: salon.id,
       customer_id: user.id,
       rating,
       comment,
-      author_name: user.email,
+      author_name: authorName,
     });
     if (error) {
       console.error("Review insert error:", error);
@@ -55,7 +83,7 @@ export default function SalonPage() {
       return;
     }
     setComment("");
-    setRating(5);
+    setRating(0);
     setSubmitted(true);
     setSubmitting(false);
     const { data } = await supabase
@@ -66,9 +94,19 @@ export default function SalonPage() {
     setReviews(data || []);
   }
 
-  if (!salon) return (
+  if (isLoading) return (
     <div className="min-h-screen bg-cream pt-24 text-center">
       <p className="font-dm-sans text-charcoal">Loading...</p>
+    </div>
+  );
+
+  if (!salon) return (
+    <div className="min-h-screen bg-cream pt-24 text-center flex flex-col items-center justify-center">
+      <h1 className="font-cormorant text-4xl text-primary mb-4">Salon Not Found</h1>
+      <p className="font-dm-sans text-charcoal/70 mb-8">We couldn't find the artist you were looking for.</p>
+      <a href="/explore" className="rounded-full bg-gold px-8 py-3 font-dm-sans font-medium text-white hover:bg-gold/90 transition-colors">
+        Back to Explore
+      </a>
     </div>
   );
 
@@ -88,7 +126,23 @@ export default function SalonPage() {
           <div className="absolute inset-0 bg-gradient-to-t from-primary/80 to-transparent" />
           <div className="absolute bottom-6 left-6 right-6 text-white">
             <h1 className="font-cormorant text-4xl md:text-5xl mb-2">{salon.name}</h1>
-            <p className="font-dm-sans text-white/80">{salon.location}</p>
+            <div className="flex items-center gap-3 flex-wrap">
+              <p className="font-dm-sans text-white/80">{salon.location}</p>
+              {salon.map_url && (
+                <a 
+                  href={salon.map_url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 rounded-full bg-gold px-4 py-1.5 text-xs font-dm-sans font-medium text-white shadow-md hover:bg-gold/90 transition-colors"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                    <circle cx="12" cy="10" r="3" />
+                  </svg>
+                  Navigate
+                </a>
+              )}
+            </div>
           </div>
         </div>
 
@@ -155,8 +209,58 @@ export default function SalonPage() {
             <h2 className="font-cormorant text-3xl text-primary mb-6">Portfolio</h2>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               {salon.gallery_images.map((url: string, idx: number) => (
-                <img key={idx} src={url} alt="Gallery" className="w-full h-48 object-cover rounded-2xl shadow-sm border border-gold/10" />
+                <img 
+                  key={idx} 
+                  src={url} 
+                  alt="Gallery" 
+                  onClick={() => {
+                    setSelectedImage(url);
+                    setZoomLevel(1);
+                  }}
+                  className="w-full h-48 object-cover rounded-2xl shadow-sm border border-gold/10 cursor-pointer hover:opacity-90 transition-opacity" 
+                />
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* Image Modal */}
+        {selectedImage && (
+          <div 
+            className="fixed inset-0 z-50 flex items-center justify-center bg-charcoal/90 backdrop-blur-sm p-4 overflow-hidden"
+            onClick={() => setSelectedImage(null)}
+          >
+            <div className="absolute top-6 right-6 flex gap-3 z-50">
+              <button 
+                onClick={(e) => { e.stopPropagation(); setZoomLevel(z => Math.min(z + 0.5, 3)); }}
+                className="p-2.5 bg-charcoal/80 backdrop-blur-md border border-white/20 shadow-xl rounded-full text-white hover:bg-charcoal transition-all hover:scale-105"
+                title="Zoom In"
+              >
+                <ZoomIn size={22} />
+              </button>
+              <button 
+                onClick={(e) => { e.stopPropagation(); setZoomLevel(z => Math.max(z - 0.5, 0.5)); }}
+                className="p-2.5 bg-charcoal/80 backdrop-blur-md border border-white/20 shadow-xl rounded-full text-white hover:bg-charcoal transition-all hover:scale-105"
+                title="Zoom Out"
+              >
+                <ZoomOut size={22} />
+              </button>
+              <button 
+                onClick={(e) => { e.stopPropagation(); setSelectedImage(null); }}
+                className="p-2.5 bg-rose/90 backdrop-blur-md border border-white/20 shadow-xl rounded-full text-white hover:bg-rose transition-all hover:scale-105 ml-2"
+                title="Close"
+              >
+                <X size={22} />
+              </button>
+            </div>
+            <div className="overflow-auto w-full h-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+              <img 
+                src={selectedImage} 
+                alt="Enlarged Portfolio Image" 
+                style={{ transform: `scale(${zoomLevel})`, transition: 'transform 0.2s ease-in-out', cursor: zoomLevel > 1 ? 'grab' : 'zoom-in' }}
+                onClick={(e) => { e.stopPropagation(); setZoomLevel(z => z >= 2 ? 1 : z + 0.5); }}
+                className="max-h-[90vh] max-w-full object-contain rounded-xl shadow-2xl origin-center"
+              />
             </div>
           </div>
         )}
@@ -177,7 +281,7 @@ export default function SalonPage() {
         )}
 
         {/* Reviews */}
-        <h2 className="font-cormorant text-3xl text-primary mb-6">Reviews</h2>
+        <h2 id="reviews" className="font-cormorant text-3xl text-primary mb-6 scroll-mt-24">Reviews</h2>
         {reviews.length === 0 ? (
           <div className="rounded-2xl bg-white p-6 border border-gold/20 text-center mb-8 shadow-warm">
             <p className="font-dm-sans text-sm text-charcoal/60">No reviews yet. Be the first!</p>
@@ -205,17 +309,27 @@ export default function SalonPage() {
               <p className="text-green-600 font-dm-sans text-sm mb-4 bg-green-50 p-3 rounded-lg border border-green-200">Review submitted successfully! Thank you.</p>
             )}
             <label className="block font-dm-sans text-sm font-medium text-primary mb-2">Rating</label>
-            <select value={rating} onChange={(e) => setRating(+e.target.value)}
-              className="mb-5 rounded-xl border border-gold/20 px-4 py-3 text-sm font-dm-sans w-full focus:outline-none focus:border-gold bg-cream/30">
-              {[5,4,3,2,1].map((n) => (
-                <option key={n} value={n}>{n} star{n !== 1 ? "s" : ""}</option>
+            <div className="flex gap-1 mb-5" onMouseLeave={() => setHoverRating(0)}>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  type="button"
+                  onClick={() => setRating(star)}
+                  onMouseEnter={() => setHoverRating(star)}
+                  className="focus:outline-none transition-transform hover:scale-110 active:scale-95"
+                >
+                  <Star 
+                    size={28} 
+                    className={`${(hoverRating || rating) >= star ? "fill-gold text-gold" : "text-gold/30"} transition-colors`} 
+                  />
+                </button>
               ))}
-            </select>
+            </div>
             <label className="block font-dm-sans text-sm font-medium text-primary mb-2">Comment</label>
             <textarea value={comment} onChange={(e) => setComment(e.target.value)}
               rows={4} placeholder="Share your experience..."
               className="mb-6 w-full rounded-xl border border-gold/20 px-4 py-3 text-sm font-dm-sans focus:outline-none focus:border-gold resize-none bg-cream/30" />
-            <button onClick={submitReview} disabled={submitting || !comment}
+            <button onClick={submitReview} disabled={submitting || !comment || rating === 0}
               className="rounded-full bg-primary px-8 py-3 font-dm-sans text-sm font-medium text-white disabled:opacity-50 hover:bg-primary/90 transition-colors">
               {submitting ? "Submitting..." : "Submit Review"}
             </button>

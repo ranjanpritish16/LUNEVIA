@@ -24,6 +24,7 @@ export interface SalonCardProps {
   coverImage: string;
   verified: boolean;
   slug: string;
+  mapUrl?: string;
   className?: string;
 }
 
@@ -38,6 +39,7 @@ export function SalonCard({
   coverImage,
   verified,
   slug,
+  mapUrl,
   className,
 }: SalonCardProps) {
   const [isSaved, setIsSaved] = useState(false);
@@ -161,9 +163,30 @@ export function SalonCard({
 
           <div>
             <h3 className="font-cormorant text-2xl text-primary">{name}</h3>
-            <p className="mt-0.5 font-dm-sans text-sm text-charcoal">
-              {location}
-            </p>
+            <div className="mt-0.5 flex items-center justify-between">
+              <p className="font-dm-sans text-sm text-charcoal">
+                {location}
+              </p>
+              {mapUrl && (
+                <a
+                  href={mapUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.open(mapUrl, "_blank");
+                  }}
+                  className="flex shrink-0 items-center gap-1.5 rounded-full bg-gold px-3 py-1 text-[10px] font-medium text-white shadow-sm transition-colors hover:bg-gold/90"
+                >
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                    <circle cx="12" cy="10" r="3" />
+                  </svg>
+                  Map
+                </a>
+              )}
+            </div>
           </div>
 
           <div className="flex items-center justify-between font-dm-sans text-sm text-charcoal">

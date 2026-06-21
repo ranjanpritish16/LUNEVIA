@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { TimelineResponse } from "@/lib/types/timeline";
 import { TimelineNode } from "@/components/ui/TimelineNode";
+import { supabase } from "@/lib/supabase";
 
 export default function TimelinePage() {
   const [weddingDate, setWeddingDate] = useState("");
@@ -11,8 +12,28 @@ export default function TimelinePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const generateTimeline = async () => {
-    if (!weddingDate) return;
+  useEffect(() => {
+    async function loadProfileDate() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data } = await supabase
+        .from("profiles")
+        .select("wedding_date")
+        .eq("id", user.id)
+        .single();
+
+      if (data?.wedding_date) {
+        setWeddingDate(data.wedding_date);
+        // Automatically generate timeline based on saved date
+        generateTimelineWithDate(data.wedding_date);
+      }
+    }
+    loadProfileDate();
+  }, []);
+
+  const generateTimelineWithDate = async (dateToUse: string) => {
+    if (!dateToUse) return;
     
     setIsLoading(true);
     setError("");
@@ -22,7 +43,7 @@ export default function TimelinePage() {
       const res = await fetch("/api/ai/timeline", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ weddingDate }),
+        body: JSON.stringify({ weddingDate: dateToUse }),
       });
 
       const data = await res.json();
@@ -38,6 +59,8 @@ export default function TimelinePage() {
       setIsLoading(false);
     }
   };
+
+  const generateTimeline = () => generateTimelineWithDate(weddingDate);
 
   // Restrict date selection to today onwards
   const today = new Date().toISOString().split("T")[0];

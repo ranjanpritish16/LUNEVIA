@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { useState, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import { SalonCard } from "@/components/ui/SalonCard";
 import { LuneviaButton } from "@/components/ui/LuneviaButton";
 import { LOCATION_FILTERS, SPECIALTY_FILTERS } from "@/lib/data/filters";
@@ -29,7 +30,10 @@ function FilterSection({ title, children }: { title: string; children: React.Rea
 }
 
 export function ExplorePage({ salons }: { salons: any[] }) {
-  const [search, setSearch] = useState("");
+  const searchParams = useSearchParams();
+  const initialSearch = searchParams.get("q") || "";
+
+  const [search, setSearch] = useState(initialSearch);
   const [specialties, setSpecialties] = useState<string[]>([]);
   const [prices, setPrices] = useState<string[]>([]);
   const [rating, setRating] = useState("any");
@@ -198,6 +202,7 @@ export function ExplorePage({ salons }: { salons: any[] }) {
                   coverImage={salon.cover_image}
                   verified={salon.verified}
                   slug={salon.slug}
+                  mapUrl={salon.map_url}
                 />
               </motion.div>
             ))}
