@@ -69,24 +69,12 @@ export async function POST(request: Request) {
     // Cap the planning timeline at 12 months for beauty
     if (monthsOut > 12) monthsOut = 12;
 
-    const MODEL_CHAIN = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-1.5-flash-latest"];
     const prompt = TIMELINE_PROMPT(monthsOut);
 
-    let result;
-    let lastError: unknown;
-    for (const modelName of MODEL_CHAIN) {
-      try {
-        const model = getGeminiModel(modelName);
-        result = await model.generateContent([{ text: prompt }]);
-        break;
-      } catch (err: any) {
-        lastError = err;
-        console.warn(`[timeline] ${modelName} failed: ${err.message}`);
-      }
-    }
+    const model = getGeminiModel();
+    const result = await model.generateContent([{ text: prompt }]);
 
     if (!result) {
-      console.error("[timeline] All models failed:", lastError);
       throw new Error("Timeline generation is temporarily unavailable.");
     }
 

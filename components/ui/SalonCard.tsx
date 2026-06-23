@@ -66,7 +66,8 @@ export function SalonCard({
   const router = useRouter();
 
   const toggleSave = async (e: React.MouseEvent) => {
-    e.preventDefault(); // Prevent link navigation
+    e.preventDefault();
+    e.stopPropagation();
     
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
@@ -115,7 +116,10 @@ export function SalonCard({
         className
       )}
     >
-      <Link href={`/salon/${slug}`} className="block">
+      <div 
+        onClick={() => router.push(`/salon/${slug}`)} 
+        className="block cursor-pointer"
+      >
         <div className="relative aspect-[3/2] overflow-hidden">
           <Image
             src={coverImage}
@@ -214,7 +218,7 @@ export function SalonCard({
             </span>
           </div>
         </div>
-      </Link>
+      </div>
     </motion.article>
   );
 }

@@ -132,23 +132,20 @@ export async function POST(request: Request) {
 
     const fullPrompt = `${systemPrompt}\n\n--- CONVERSATION START ---\n\n${conversationText}\n\nCONCIERGE:`;
 
-    // Try primary model, fall back to stable gemini-1.5-flash on 503
-    const MODEL_CHAIN = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-1.5-flash-latest"];
+    // Try primary model
+    const model = getGeminiModel();
     let result;
-    let lastError: unknown;
-    for (const modelName of MODEL_CHAIN) {
-      try {
-        const model = getGeminiModel(modelName);
-        result = await model.generateContent([{ text: fullPrompt }]);
-        break; // success — stop retrying
-      } catch (err: any) {
-        lastError = err;
-        console.warn(`[concierge] ${modelName} failed: ${err.message}`);
-      }
+    try {
+      result = await model.generateContent([{ text: fullPrompt }]);
+    } catch (err: any) {
+      console.error("[concierge] Model failed:", err);
+      return NextResponse.json(
+        { error: "LUNÉVIA Concierge is temporarily unavailable. Please try again in a moment." },
+        { status: 503 }
+      );
     }
 
     if (!result) {
-      console.error("[concierge] All models failed:", lastError);
       return NextResponse.json(
         { error: "LUNÉVIA Concierge is temporarily unavailable. Please try again in a moment." },
         { status: 503 }
