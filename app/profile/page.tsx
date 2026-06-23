@@ -26,6 +26,7 @@ export default function CustomerDashboardPage() {
   const [pastBookings, setPastBookings] = useState<any[]>([]);
   const [allBookings, setAllBookings] = useState<any[]>([]); // For budget tracking
   const [savedSalons, setSavedSalons] = useState<any[]>([]);
+  const [savedPackages, setSavedPackages] = useState<any[]>([]);
   const [recommendations, setRecommendations] = useState<any[]>([]);
 
   // Form State
@@ -75,9 +76,16 @@ export default function CustomerDashboardPage() {
           .in("id", profileData.saved_salons);
       }
 
-      const [bookingsRes, savedSalonsRes] = await Promise.all([
+      const savedPackagesPromise = supabase
+        .from("saved_packages")
+        .select("*")
+        .eq("customer_id", user.id)
+        .order("created_at", { ascending: false });
+
+      const [bookingsRes, savedSalonsRes, savedPackagesRes] = await Promise.all([
         bookingsPromise,
-        savedSalonsPromise
+        savedSalonsPromise,
+        savedPackagesPromise
       ]);
 
       const fetchedBookings = bookingsRes.data || [];
@@ -130,6 +138,7 @@ export default function CustomerDashboardPage() {
       setBookings(fetchedBookings.filter(b => !isBookingInPast(b)));
       setPastBookings(fetchedBookings.filter(b => isBookingInPast(b)));
       setSavedSalons(savedSalonsRes.data || []);
+      setSavedPackages(savedPackagesRes.data || []);
 
       if (profileData?.location) {
         const bookedIds = fetchedBookings.map(b => b.salon_id);
@@ -380,7 +389,49 @@ export default function CustomerDashboardPage() {
               )}
             </section>
 
-            {/* 3.1 AI Proactive Recommendations */}
+            {/* 3.1 Saved Bridal Packages */}
+            <section className="pt-4">
+              <div className="flex items-center gap-2 mb-6">
+                <Sparkles size={20} className="text-rose" />
+                <h2 className="font-cormorant text-3xl text-primary">Saved Packages</h2>
+              </div>
+              {savedPackages.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-gold/40 bg-white/50 p-8 text-center">
+                  <p className="font-dm-sans text-charcoal/60 mb-4">No saved packages yet.</p>
+                  <Link href="/package-builder" className="inline-block rounded-full bg-gold px-6 py-2.5 font-dm-sans text-sm font-medium text-white hover:bg-gold/90 transition-colors">
+                    Build a Package
+                  </Link>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {savedPackages.map((pkg) => (
+                    <div key={pkg.id} className="rounded-2xl border border-gold/20 bg-white p-6 shadow-[0_4px_24px_rgba(201,147,58,0.04)] hover:shadow-[0_4px_24px_rgba(201,147,58,0.08)] transition-shadow">
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <p className="font-dm-sans text-xs uppercase tracking-widest text-gold mb-1">{pkg.package_data.totalEstimate}</p>
+                          <h3 className="font-cormorant text-2xl text-primary">{pkg.package_data.packageName}</h3>
+                          <p className="font-dm-sans text-sm text-charcoal/70 mt-1">{pkg.package_data.tagline}</p>
+                        </div>
+                      </div>
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {pkg.package_data.services.map((service: any, i: number) => (
+                          <span key={i} className="rounded-full bg-gold/10 px-3 py-1 font-dm-sans text-xs text-primary">
+                            {service.name}
+                          </span>
+                        ))}
+                      </div>
+                      {pkg.package_data.topArtistMatch && (
+                        <p className="mt-4 font-dm-sans text-sm font-medium text-gold">
+                          Recommended Match: {pkg.package_data.topArtistMatch}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            {/* 3.2 AI Proactive Recommendations */}
             {recommendations.length > 0 && (
               <section className="pt-4">
                 <div className="flex items-center gap-2 mb-2">

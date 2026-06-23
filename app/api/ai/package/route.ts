@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { supabase } from "@/lib/supabase";
 
 import { getGeminiModel } from "@/lib/gemini";
 import type {
@@ -44,7 +45,7 @@ function formatAestheticLabel(aesthetic: string): string {
   return aestheticMap[aesthetic] || aesthetic;
 }
 
-function buildSystemPrompt(answers: PackageBuilderAnswers): string {
+function buildSystemPrompt(answers: PackageBuilderAnswers, salonList: string): string {
   const weddingDate = new Date(answers.weddingDate);
   const today = new Date();
   const daysUntil = Math.ceil(
@@ -60,6 +61,8 @@ function buildSystemPrompt(answers: PackageBuilderAnswers): string {
   const skinTone = answers.skinTone.charAt(0).toUpperCase() + answers.skinTone.slice(1);
 
   return `You are LUNÉVIA Concierge, a luxury bridal beauty consultant. Your task is to create a personalized bridal beauty package based on the bride's preferences and timeline.
+
+You have access to this list of real verified salons/artists in Delhi: ${salonList || "LUNÉVIA Verified Artists"}
 
 Bride's Information:
 - Wedding Date: ${weddingDate.toLocaleDateString("en-IN", { weekday: "long", year: "numeric", month: "long", day: "numeric" })} (${weeksUntil} weeks away)
@@ -89,7 +92,7 @@ Based on this information, create a CUSTOM bridal beauty package. Return ONLY va
       "estimatedCost": "string (e.g. '₹5,000–₹7,000')"
     }
   ],
-  "topArtistMatch": "string (name of a luxury salon/artist from Delhi that would be perfect match)",
+  "topArtistMatch": "string (name of a luxury salon/artist from Delhi that would be perfect match. MUST be selected from the provided list of real verified salons)",
   "personalNote": "string (warm, 2 sentence closing that acknowledges her specific aesthetic and reassures her about the timeline)"
 }
 
@@ -98,7 +101,7 @@ Guidelines:
 - Services should match what she selected, priced appropriately for her budget range
 - Total estimate should align with her budget range
 - The package name should feel luxe, specific to her aesthetic choice
-- Artist match should feel confident and personal`;
+- Artist match MUST be an exact name from the provided list of real verified salons. Do not invent names.`;
 }
 
 export async function POST(request: Request): Promise<Response> {
@@ -122,11 +125,17 @@ export async function POST(request: Request): Promise<Response> {
       );
     }
 
+    // Fetch real salons
+    const { data: dbSalons } = await supabase
+      .from("salons")
+      .select("name, locality");
+    const salonList = (dbSalons || []).map(s => `${s.name} (${s.locality || 'Delhi'})`).join(", ");
+
     // Try to get response from Gemini
     let geminiText: string | null = null;
     try {
       const model = getGeminiModel();
-      const systemPrompt = buildSystemPrompt(answers);
+      const systemPrompt = buildSystemPrompt(answers, salonList);
 
       const response = await model.generateContent({
         contents: [

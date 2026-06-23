@@ -491,7 +491,7 @@ function ResultsPage({ package: pkg, onStartOver }: ResultsPageProps) {
             if (error) {
               alert(`Error saving package: ${error.message}`);
             } else {
-              alert("✓ Package saved to your profile!");
+              router.push("/profile");
             }
           }}
         >
