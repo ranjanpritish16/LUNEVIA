@@ -128,7 +128,7 @@ export async function POST(request: Request): Promise<Response> {
     // Fetch real salons
     const { data: dbSalons } = await supabase
       .from("salons")
-      .select("name, locality");
+      .select("name, locality, slug");
     const salonList = (dbSalons || []).map(s => `${s.name} (${s.locality || 'Delhi'})`).join(", ");
 
     // Try to get response from Gemini
@@ -173,6 +173,15 @@ export async function POST(request: Request): Promise<Response> {
         }
 
         const packageData: PackageApiResponse = JSON.parse(jsonText.trim());
+        
+        // Find the matched salon to get its slug
+        if (dbSalons && packageData.topArtistMatch) {
+          const matchedSalon = dbSalons.find(s => packageData.topArtistMatch.includes(s.name) || s.name.includes(packageData.topArtistMatch));
+          if (matchedSalon && matchedSalon.slug) {
+            packageData.topArtistSlug = matchedSalon.slug;
+          }
+        }
+        
         return NextResponse.json(packageData);
       }
     } catch (error) {

@@ -66,5 +66,6 @@ export interface PackageApiResponse {
   timeline: TimelineItem[];
   services: ServiceItem[];
   topArtistMatch: string;
+  topArtistSlug?: string;
   personalNote: string;
 }

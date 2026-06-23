@@ -418,7 +418,7 @@ function ResultsPage({ package: pkg, onStartOver }: ResultsPageProps) {
                 {/* Dot */}
                 <div
                   className={cn(
-                    "absolute -left-6.5 top-1 h-4 w-4 rounded-full border-2 border-primary",
+                    "absolute -left-[26px] top-1 h-4 w-4 rounded-full border-2 border-primary",
                     item.priority === "high" ? "bg-gold" : "bg-gold/40"
                   )}
                   aria-hidden="true"
@@ -430,7 +430,7 @@ function ResultsPage({ package: pkg, onStartOver }: ResultsPageProps) {
                     <p className="font-dm-sans font-semibold text-primary">
                       {item.weeksBeforeWedding === 1
                         ? "1 week before"
-                        : `${item.weeksBeforeWedding} weeks before`}
+                        : `${item.weeksBeforeWedding || "Few"} weeks before`}
                     </p>
                     <Badge
                       variant={
@@ -460,9 +460,15 @@ function ResultsPage({ package: pkg, onStartOver }: ResultsPageProps) {
         <p className="font-dm-sans text-sm uppercase tracking-wider text-gold">
           Top Artist Match
         </p>
-        <h3 className="mt-2 font-cormorant text-3xl text-primary">
-          {pkg.topArtistMatch}
-        </h3>
+        {pkg.topArtistSlug ? (
+          <Link href={`/salon/${pkg.topArtistSlug}`} className="inline-block mt-2 font-cormorant text-3xl text-primary hover:text-gold transition-colors">
+            {pkg.topArtistMatch} <span className="text-xl">↗</span>
+          </Link>
+        ) : (
+          <h3 className="mt-2 font-cormorant text-3xl text-primary">
+            {pkg.topArtistMatch}
+          </h3>
+        )}
       </motion.div>
 
       {/* CTAs */}
