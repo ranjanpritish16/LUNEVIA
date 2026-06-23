@@ -57,7 +57,7 @@ export default function AboutPage() {
 
                 <div className="mt-12 text-center">
                     <span className="inline-block px-8 py-3 rounded-full border border-gold/40 text-gold font-dm-sans text-sm tracking-widest uppercase">
-                        Built at IIT Mandi · AI Startup Buildathon 2026
+                        AI Startup Buildathon 2026
                     </span>
                 </div>
             </div>

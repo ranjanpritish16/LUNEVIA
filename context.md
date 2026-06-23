@@ -769,7 +769,7 @@ AI Startup Buildathon 2026 — SuperXgen AI Builder Series
 
 ---
 
-*LUNÉVIA — Built at IIT Mandi. Submitted for AI Startup Buildathon 2026.*
+*LUNÉVIA — Submitted for AI Startup Buildathon 2026.*
 *"Your most beautiful day, designed by AI."*
 
 

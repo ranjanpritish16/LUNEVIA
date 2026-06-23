@@ -88,6 +88,7 @@ LUNÉVIA is a two-sided marketplace serving both customers (brides) and service 
 - **Gemini AI Powered**: Uses Google Gemini API to generate contextual, persona-aware responses recommending real artists.
 - **Session Memory**: Message history is preserved within the browser session.
 - **Context-Aware Suggestions**: Can cross-reference the user's previously analyzed face shape for personalized styling advice.
+- **Vernacular Support**: The AI auto-detects the user's language and seamlessly responds in English or Hindi, catering perfectly to the local Delhi market.
 
 ---
 
@@ -107,7 +108,8 @@ One of LUNÉVIA's supplementary AI tools — a privacy-first, client-side face a
 - **5-Step Preference Wizard**: Gathers Wedding Date, Budget Range, Services Needed, Aesthetic Style, and Skin Tone + Notes.
 - **Auth-Gated**: Requires login before the wizard begins.
 - **Gemini-Generated Package**: Sends the answers to the Gemini API and receives a structured custom bridal package recommendation.
-- **Package Output**: Displays the suggested package name, included services, estimated timeline, and artist recommendations with reasoning.
+- **Package Output**: Displays the suggested package name, included services, estimated timeline, and a dynamic Top Artist Match directly linked from the active salon database.
+- **One-Click Save**: Brides can instantly save their customized bridal package directly to their profile dashboard for future reference.
 
 ---
 
@@ -140,6 +142,8 @@ One of LUNÉVIA's supplementary AI tools — a privacy-first, client-side face a
 - **Past Bookings**: Separate section for completed and declined bookings.
 - **Budget Tracker**: Calculates total spend and remaining budget from actual booking amounts.
 - **Saved / Wishlisted Salons**: Shows all salons the user has hearted/saved, rendered as `SalonCard` components.
+- **Saved Bridal Packages**: Displays AI-generated bridal packages saved from the Package Builder, complete with timeline and recommended artist links.
+- **Assigned Stylist Details**: Bookings now display the assigned makeup artist's name and direct phone number for easy coordination.
 - **AI Recommendations**: Suggests salons based on the bride's saved location and budget preferences.
 - **Sign Out**: Clean logout routing back to `/login`.
 
@@ -171,6 +175,10 @@ A complete internal management portal with a custom artist-only layout (no custo
 - **Confirm / Decline Actions**: One-click confirm button; decline opens an inline reason input field before submitting.
 - **Auto-Completion Engine**: On every page load, checks every `confirmed` booking against the current time. Parses service duration strings (including decimals like `0.5 hrs`) and automatically flips status to `completed` in the UI and pushes the change to Supabase.
 - **Payment Tracking**: Artists can log partial or full payment received for each booking. Amount is saved to the `bookings` table.
+
+#### Team Management (`/artist/dashboard/team`)
+- **Staff Directory**: Add and manage individual makeup artists, hairstylists, and assistants within the salon.
+- **Contact Syncing**: Staff phone numbers and roles are saved and automatically shared with brides when a team member is assigned to their booking.
 
 #### Services (`/artist/dashboard/services`)
 - **Service Manager**: Add, edit, and delete services from a clean table UI.
@@ -397,14 +405,11 @@ GEMINI_API_KEY=your_gemini_api_key
 These features were planned as part of the product vision but are not yet built. They are listed here as the next milestone roadmap:
 
 ### Booking Enhancements
-- **Stylist Selection** — Allow brides to choose a specific team member within a salon when booking.
 - **Trial Run Scheduling** — Add an option during the booking flow to schedule a pre-wedding trial appointment.
 - **Booking Rescheduling** — Let customers reschedule a confirmed booking directly from their dashboard.
 
 ### AI Feature Upgrades
 - **AI Review Summarizer on Salon Pages** — Auto-generate a 2-sentence Gemini summary ("85 brides loved her work — customers consistently praise...") at the top of every salon's reviews section.
-- **Package Card Export** — Allow the AI Package Builder output to be exported as a beautiful screenshot-ready card that brides can save or share.
-- **Vernacular Concierge** — LUNÉVIA Concierge responds in Hindi when the user writes in Hindi (1-line system-prompt change).
 
 ### Discovery & Matching
 - **Mehendi Style Matcher** — A gallery-based quiz (Rajasthani · Arabic · Indo-Western · Minimalist) that recommends a mehendi style and matching artists on the platform.
