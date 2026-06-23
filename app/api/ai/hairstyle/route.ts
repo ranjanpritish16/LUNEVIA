@@ -68,26 +68,50 @@ export async function POST(request: Request) {
       );
     }
 
-    const modelName = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
+    const modelName = process.env.GEMINI_MODEL ?? "gemini-3.1-flash-lite";
     const model = getGeminiModel(modelName);
 
     let result;
-    try {
-      result = await model.generateContent([
-        { text: FACE_SHAPE_CLASSIFICATION_PROMPT(measurements) },
-      ]);
-    } catch (err: any) {
-      console.error("[hairstyle] model generateContent error", err);
-      const msg = err?.message ?? String(err);
-      if (msg.includes("not found") || msg.includes("not supported") || err?.status === 404) {
-        return NextResponse.json(
-          {
-            error: `Gemini model '${modelName}' is not available for generateContent. Set a supported model via GEMINI_MODEL in .env.local or call ModelService.ListModels to discover available models.`,
-          },
-          { status: 500 }
-        );
+    let attempts = 0;
+    const maxAttempts = 3;
+    let lastError: any;
+
+    while (attempts < maxAttempts) {
+      try {
+        result = await model.generateContent([
+          { text: FACE_SHAPE_CLASSIFICATION_PROMPT(measurements) },
+        ]);
+        break;
+      } catch (err: any) {
+        lastError = err;
+        attempts++;
+        console.error(`[hairstyle] model generateContent error (attempt ${attempts}):`, err?.message);
+        
+        const msg = err?.message ?? String(err);
+        if (msg.includes("not found") || msg.includes("not supported") || err?.status === 404) {
+          break; // Do not retry on 404
+        }
+        
+        if (attempts < maxAttempts) {
+          await new Promise((resolve) => setTimeout(resolve, 1500));
+        }
       }
-      throw err;
+    }
+
+    if (!result) {
+      if (lastError) {
+        const msg = lastError?.message ?? String(lastError);
+        if (msg.includes("not found") || msg.includes("not supported") || lastError?.status === 404) {
+          return NextResponse.json(
+            {
+              error: `Gemini model '${modelName}' is not available for generateContent. Set a supported model via GEMINI_MODEL in .env.local or call ModelService.ListModels to discover available models.`,
+            },
+            { status: 500 }
+          );
+        }
+        throw lastError;
+      }
+      throw new Error("Failed to generate content");
     }
 
     const text = result.response.text();
@@ -99,8 +123,22 @@ export async function POST(request: Request) {
       );
     }
 
-    const cleaned = text.replace(/```json\n?|\n?```/g, "").trim();
-    const parsed = JSON.parse(cleaned) as RawHairstyleResponse;
+    let parsed: RawHairstyleResponse;
+    try {
+      const firstBrace = text.indexOf('{');
+      const lastBrace = text.lastIndexOf('}');
+      if (firstBrace !== -1 && lastBrace !== -1) {
+        const jsonStr = text.substring(firstBrace, lastBrace + 1);
+        parsed = JSON.parse(jsonStr) as RawHairstyleResponse;
+      } else {
+        const cleaned = text.replace(/```json\n?|\n?```/g, "").trim();
+        parsed = JSON.parse(cleaned) as RawHairstyleResponse;
+      }
+    } catch (parseError) {
+      console.error("[hairstyle] JSON parse error:", parseError);
+      console.error("Raw text was:", text);
+      throw new Error("Failed to parse AI response as JSON");
+    }
 
     const recommendations: HairstyleRecommendation[] = (
       parsed.recommendations ?? []
@@ -128,7 +166,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error:
-          "Hairstyle analysis is temporarily unavailable. Please try again.",
+          "Hairstyle analysis is temporarily unavailable. Error: " + (error as any).message,
       },
       { status: 500 }
     );

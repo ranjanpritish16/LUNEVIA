@@ -64,7 +64,6 @@ export function HairstyleAnalyzer() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<HairstyleApiResponse | null>(null);
-  const [measurements, setMeasurements] = useState<any | null>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -104,9 +103,6 @@ export function HairstyleAnalyzer() {
       });
 
       const faceAnalysis = await analyzeFaceShape(img);
-
-      // Store measurements for debugging
-      setMeasurements(faceAnalysis.measurements);
 
       // Step 2: Send facial measurements to API for Gemini-based classification and recommendations
       const res = await fetch("/api/ai/hairstyle", {
@@ -260,25 +256,6 @@ export function HairstyleAnalyzer() {
                 <p className="mt-4 max-w-xl font-dm-sans italic text-charcoal">
                   {results.characteristics}
                 </p>
-
-                {measurements && (
-                  <details className="mt-6 inline-block text-left">
-                    <summary className="cursor-pointer font-dm-sans text-xs text-charcoal/60 hover:text-charcoal/80">
-                      📊 Debug: Extracted Measurements
-                    </summary>
-                    <div className="mt-3 space-y-1 rounded-lg bg-charcoal/5 p-3 font-mono text-xs text-charcoal/70">
-                      <div>Face Length: {measurements.faceLength}px</div>
-                      <div>Jaw Width: {measurements.jawWidth}px</div>
-                      <div>Forehead Width: {measurements.foreheadWidth}px</div>
-                      <div>Cheekbone Width: {measurements.cheekboneWidth}px</div>
-                      <div className="mt-2 border-t border-charcoal/10 pt-2">
-                        <div>Length:Width Ratio: {measurements.lengthToWidthRatio}</div>
-                        <div>Jaw:Forehead Ratio: {measurements.jawToForeheadRatio}</div>
-                        <div>Cheekbone:Jaw Ratio: {measurements.cheekboneToJawRatio}</div>
-                      </div>
-                    </div>
-                  </details>
-                )}
               </div>
 
               <h2 className="mt-12 text-center font-cormorant text-3xl text-primary md:text-4xl">
