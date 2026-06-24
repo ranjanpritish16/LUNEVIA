@@ -11,5 +11,15 @@ export function getGeminiModel(modelName = process.env.GEMINI_MODEL ?? "gemini-3
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);
-  return genAI.getGenerativeModel({ model: modelName }, { apiVersion });
+  return genAI.getGenerativeModel(
+    {
+      model: modelName,
+      generationConfig: {
+        temperature: 1.1,
+        topP: 0.95,
+        topK: 40,
+      },
+    },
+    { apiVersion }
+  );
 }

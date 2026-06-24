@@ -26,6 +26,10 @@ export interface SalonCardProps {
   slug: string;
   mapUrl?: string;
   className?: string;
+  activeCampaign?: {
+    offer_type: string;
+    discount_value: number;
+  } | null;
 }
 
 export function SalonCard({
@@ -41,6 +45,7 @@ export function SalonCard({
   slug,
   mapUrl,
   className,
+  activeCampaign,
 }: SalonCardProps) {
   const [isSaved, setIsSaved] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -49,13 +54,13 @@ export function SalonCard({
     async function checkSavedStatus() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
-      
+
       const { data } = await supabase
         .from('profiles')
         .select('saved_salons')
         .eq('id', session.user.id)
         .single();
-        
+
       if (data && data.saved_salons?.includes(id)) {
         setIsSaved(true);
       }
@@ -68,7 +73,7 @@ export function SalonCard({
   const toggleSave = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
       router.push('/login');
@@ -76,27 +81,27 @@ export function SalonCard({
     }
 
     setIsLoading(true);
-    
+
     try {
       const { data: profile } = await supabase
         .from('profiles')
         .select('saved_salons')
         .eq('id', session.user.id)
         .single();
-        
+
       let currentSaved = profile?.saved_salons || [];
-      
+
       if (isSaved) {
         currentSaved = currentSaved.filter((salonId: string) => salonId !== id);
       } else {
         currentSaved = [...currentSaved, id];
       }
-      
+
       await supabase
         .from('profiles')
         .update({ saved_salons: currentSaved })
         .eq('id', session.user.id);
-        
+
       setIsSaved(!isSaved);
     } catch (error) {
       console.error("Error saving salon:", error);
@@ -116,8 +121,8 @@ export function SalonCard({
         className
       )}
     >
-      <div 
-        onClick={() => router.push(`/salon/${slug}`)} 
+      <div
+        onClick={() => router.push(`/salon/${slug}`)}
         className="block cursor-pointer"
       >
         <div className="relative aspect-[3/2] overflow-hidden">
@@ -132,7 +137,7 @@ export function SalonCard({
             className="absolute inset-0 bg-gradient-to-t from-primary/70 via-primary/20 to-transparent"
             aria-hidden="true"
           />
-          
+
           <div className="absolute left-3 top-3 z-10">
             <button
               onClick={toggleSave}
@@ -150,13 +155,29 @@ export function SalonCard({
           </div>
 
           {verified && (
-            <div className="absolute right-3 top-3">
+            <div className={activeCampaign ? "absolute right-3 top-10" : "absolute right-3 top-3"}>
               <Badge variant="verified">Verified</Badge>
             </div>
           )}
+
         </div>
 
         <div className="space-y-3 p-4">
+          {activeCampaign && (
+            <div className="absolute right-3 top-3">
+              <span className="inline-flex items-center rounded-full bg-red-500 px-3 py-1 font-dm-sans text-[10px] font-bold text-white uppercase tracking-wide shadow-md">
+                {activeCampaign.offer_type === "percentage_discount"
+                  ? `${activeCampaign.discount_value}% OFF`
+                  : activeCampaign.offer_type === "flat_discount"
+                    ? `₹${activeCampaign.discount_value} OFF`
+                    : activeCampaign.offer_type === "free_addon"
+                      ? "FREE ADD-ON"
+                      : "COMBO DEAL"}
+              </span>
+            </div>
+          )}
+
+
           <div className="flex flex-wrap gap-1.5">
             {specialty.slice(0, 3).map((item) => (
               <Badge key={item} variant="rose">

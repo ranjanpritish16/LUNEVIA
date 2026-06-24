@@ -16,6 +16,7 @@ import {
   LogOut,
   MoreHorizontal,
   X,
+  TrendingUp,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -124,6 +125,13 @@ export function DashboardShell({
       icon: <Star size={18} />,
       mobileVisible: true,
     },
+    {
+      href: "/artist/dashboard/growth",
+      label: "Growth Studio",
+      icon: <TrendingUp size={18} />,
+      mobileVisible: false,   // lives in "More" drawer on mobile
+    },
+
   ];
 
   const moreItems = navItems.filter((item) => !item.mobileVisible);

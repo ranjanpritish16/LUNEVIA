@@ -29,7 +29,13 @@ function FilterSection({ title, children }: { title: string; children: React.Rea
   );
 }
 
-export function ExplorePage({ salons }: { salons: any[] }) {
+export function ExplorePage({
+  salons,
+  campaignMap = {},
+}: {
+  salons: any[];
+  campaignMap?: Record<string, { offer_type: string; discount_value: number }>;
+}) {
   const searchParams = useSearchParams();
   const initialSearch = searchParams.get("q") || "";
 
@@ -203,6 +209,7 @@ export function ExplorePage({ salons }: { salons: any[] }) {
                   verified={salon.verified}
                   slug={salon.slug}
                   mapUrl={salon.map_url}
+                  activeCampaign={campaignMap[salon.id] ?? null}
                 />
               </motion.div>
             ))}

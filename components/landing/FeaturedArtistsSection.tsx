@@ -3,12 +3,27 @@ import { supabase } from "@/lib/supabase";
 import { SalonCard } from "@/components/ui/SalonCard";
 
 export async function FeaturedArtistsSection() {
-  const { data: featuredSalons } = await supabase
-    .from("salons")
-    .select("*")
-    .eq("is_published", true)
-    .order("rating", { ascending: false })
-    .limit(4);
+  const today = new Date().toISOString().slice(0, 10);
+
+  const [{ data: featuredSalons }, { data: campaigns }] = await Promise.all([
+    supabase
+      .from("salons")
+      .select("*")
+      .eq("is_published", true)
+      .order("rating", { ascending: false })
+      .limit(4),
+    supabase
+      .from("artist_campaigns")
+      .select("salon_id, offer_type, discount_value")
+      .eq("is_active", true)
+      .lte("start_date", today)
+      .gte("end_date", today),
+  ]);
+
+  const campaignMap: Record<string, { offer_type: string; discount_value: number }> = {};
+  for (const c of campaigns ?? []) {
+    if (!campaignMap[c.salon_id]) campaignMap[c.salon_id] = c;
+  }
 
   return (
     <section className="bg-blush py-24">
@@ -43,6 +58,7 @@ export async function FeaturedArtistsSection() {
                 verified={salon.verified}
                 slug={salon.slug}
                 mapUrl={salon.map_url}
+                activeCampaign={campaignMap[salon.id] ?? null}
               />
             </div>
           ))}

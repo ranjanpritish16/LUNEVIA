@@ -18,6 +18,8 @@ export default function SalonPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [zoomLevel, setZoomLevel] = useState(1);
+  const [activeCampaign, setActiveCampaign] = useState<any>(null);
+
 
   useEffect(() => {
     async function load() {
@@ -27,8 +29,9 @@ export default function SalonPage() {
         .select("*")
         .eq("slug", slug)
         .single();
-      
+
       setSalon(salonData);
+
 
       if (salonData) {
         const { data: reviewData } = await supabase
@@ -37,12 +40,25 @@ export default function SalonPage() {
           .eq("salon_id", salonData.id)
           .order("created_at", { ascending: false });
         setReviews(reviewData || []);
+        const today = new Date().toISOString().slice(0, 10);
+        const { data: campaignData } = await supabase
+          .from("artist_campaigns")
+          .select("*")
+          .eq("salon_id", salonData.id)
+          .eq("is_active", true)
+          .lte("start_date", today)
+          .gte("end_date", today)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        setActiveCampaign(campaignData);
       }
+
 
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
       setIsLoading(false);
-      
+
       // Handle hash scrolling after data loads
       setTimeout(() => {
         if (window.location.hash === '#reviews') {
@@ -66,7 +82,7 @@ export default function SalonPage() {
       .select("full_name")
       .eq("id", user.id)
       .single();
-    
+
     const authorName = profile?.full_name || user.email.split('@')[0];
 
     const { error } = await supabase.from("reviews").insert({
@@ -129,9 +145,9 @@ export default function SalonPage() {
             <div className="flex items-center gap-3 flex-wrap">
               <p className="font-dm-sans text-white/80">{salon.location}</p>
               {salon.map_url && (
-                <a 
-                  href={salon.map_url} 
-                  target="_blank" 
+                <a
+                  href={salon.map_url}
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-1.5 rounded-full bg-gold px-4 py-1.5 text-xs font-dm-sans font-medium text-white shadow-md hover:bg-gold/90 transition-colors"
                 >
@@ -167,6 +183,48 @@ export default function SalonPage() {
             Book Now
           </a>
         </div>
+        {/* Active Campaign Banner */}
+        {activeCampaign && (
+          <div className="mb-8 rounded-2xl border border-rose/30 bg-rose/5 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <span className="mt-0.5 rounded-full bg-rose px-2.5 py-0.5 font-dm-sans text-xs font-semibold text-white shrink-0">
+                {activeCampaign.offer_type === "percentage_discount"
+                  ? `${activeCampaign.discount_value}% OFF`
+                  : activeCampaign.offer_type === "flat_discount"
+                    ? `₹${activeCampaign.discount_value} OFF`
+                    : activeCampaign.offer_type === "free_addon"
+                      ? "FREE ADD-ON"
+                      : "COMBO DEAL"}
+              </span>
+              <div>
+                <p className="font-cormorant text-lg text-primary leading-tight">
+                  {activeCampaign.title}
+                </p>
+                {activeCampaign.description && (
+                  <p className="font-dm-sans text-xs text-charcoal/60 mt-0.5">
+                    {activeCampaign.description}
+                  </p>
+                )}
+                <p className="font-dm-sans text-xs text-charcoal/40 mt-1">
+                  Valid until{" "}
+                  {new Date(activeCampaign.end_date).toLocaleDateString("en-IN", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  })}
+                </p>
+              </div>
+            </div>
+            <a
+              href={`/book/${salon.slug}`}
+              className="shrink-0 rounded-full bg-rose px-6 py-2 font-dm-sans text-sm font-medium text-white hover:bg-rose/90 transition-colors text-center"
+            >
+
+              Book & Save
+            </a>
+
+          </div>
+        )}
 
         {salon.ai_summary && (
           <p className="font-dm-sans text-base text-charcoal/80 italic mb-12 border-l-2 border-gold pl-5 bg-gold/5 p-4 rounded-r-2xl">
@@ -209,15 +267,15 @@ export default function SalonPage() {
             <h2 className="font-cormorant text-3xl text-primary mb-6">Portfolio</h2>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               {salon.gallery_images.map((url: string, idx: number) => (
-                <img 
-                  key={idx} 
-                  src={url} 
-                  alt="Gallery" 
+                <img
+                  key={idx}
+                  src={url}
+                  alt="Gallery"
                   onClick={() => {
                     setSelectedImage(url);
                     setZoomLevel(1);
                   }}
-                  className="w-full h-48 object-cover rounded-2xl shadow-sm border border-gold/10 cursor-pointer hover:opacity-90 transition-opacity" 
+                  className="w-full h-48 object-cover rounded-2xl shadow-sm border border-gold/10 cursor-pointer hover:opacity-90 transition-opacity"
                 />
               ))}
             </div>
@@ -226,26 +284,26 @@ export default function SalonPage() {
 
         {/* Image Modal */}
         {selectedImage && (
-          <div 
+          <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-charcoal/90 backdrop-blur-sm p-4 overflow-hidden"
             onClick={() => setSelectedImage(null)}
           >
             <div className="absolute top-6 right-6 flex gap-3 z-50">
-              <button 
+              <button
                 onClick={(e) => { e.stopPropagation(); setZoomLevel(z => Math.min(z + 0.5, 3)); }}
                 className="p-2.5 bg-charcoal/80 backdrop-blur-md border border-white/20 shadow-xl rounded-full text-white hover:bg-charcoal transition-all hover:scale-105"
                 title="Zoom In"
               >
                 <ZoomIn size={22} />
               </button>
-              <button 
+              <button
                 onClick={(e) => { e.stopPropagation(); setZoomLevel(z => Math.max(z - 0.5, 0.5)); }}
                 className="p-2.5 bg-charcoal/80 backdrop-blur-md border border-white/20 shadow-xl rounded-full text-white hover:bg-charcoal transition-all hover:scale-105"
                 title="Zoom Out"
               >
                 <ZoomOut size={22} />
               </button>
-              <button 
+              <button
                 onClick={(e) => { e.stopPropagation(); setSelectedImage(null); }}
                 className="p-2.5 bg-rose/90 backdrop-blur-md border border-white/20 shadow-xl rounded-full text-white hover:bg-rose transition-all hover:scale-105 ml-2"
                 title="Close"
@@ -254,9 +312,9 @@ export default function SalonPage() {
               </button>
             </div>
             <div className="overflow-auto w-full h-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
-              <img 
-                src={selectedImage} 
-                alt="Enlarged Portfolio Image" 
+              <img
+                src={selectedImage}
+                alt="Enlarged Portfolio Image"
                 style={{ transform: `scale(${zoomLevel})`, transition: 'transform 0.2s ease-in-out', cursor: zoomLevel > 1 ? 'grab' : 'zoom-in' }}
                 onClick={(e) => { e.stopPropagation(); setZoomLevel(z => z >= 2 ? 1 : z + 0.5); }}
                 className="max-h-[90vh] max-w-full object-contain rounded-xl shadow-2xl origin-center"
@@ -318,9 +376,9 @@ export default function SalonPage() {
                   onMouseEnter={() => setHoverRating(star)}
                   className="focus:outline-none transition-transform hover:scale-110 active:scale-95"
                 >
-                  <Star 
-                    size={28} 
-                    className={`${(hoverRating || rating) >= star ? "fill-gold text-gold" : "text-gold/30"} transition-colors`} 
+                  <Star
+                    size={28}
+                    className={`${(hoverRating || rating) >= star ? "fill-gold text-gold" : "text-gold/30"} transition-colors`}
                   />
                 </button>
               ))}

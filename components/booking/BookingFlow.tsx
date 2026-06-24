@@ -26,6 +26,13 @@ const STEP_LABELS = ["Select Service", "Choose Time", "Confirmed"] as const;
 
 interface BookingFlowProps {
   salon: Salon;
+  activeCampaign?: {
+    id: string;
+    title: string;
+    offer_type: string;
+    discount_value: number;
+    description?: string | null;
+  } | null;
 }
 
 function formatDate(date: Date): string {
@@ -244,9 +251,10 @@ interface OrderSummaryProps {
   date: Date | null;
   time: string | null;
   staff?: { name: string; role: string } | null;
+  activeCampaign?: BookingFlowProps["activeCampaign"];
 }
 
-function OrderSummary({ salon, service, date, time, staff }: OrderSummaryProps) {
+function OrderSummary({ salon, service, date, time, staff, activeCampaign }: OrderSummaryProps) {
   return (
     <div className="rounded-2xl border border-gold/20 bg-blush p-6 shadow-[0_4px_24px_rgba(201,147,58,0.08)]">
       <h3 className="font-cormorant text-2xl text-primary">Order Summary</h3>
@@ -275,8 +283,22 @@ function OrderSummary({ salon, service, date, time, staff }: OrderSummaryProps) 
         )}
         <div className="border-t border-gold/20 pt-3">
           <dt className="text-charcoal/60">Total</dt>
-          <dd className="font-cormorant text-2xl text-gold">
-            {service?.price ?? "—"}
+          <dd>
+            {service ? (() => {
+              const disc = computeDiscountedPrice(service.price, activeCampaign);
+              return disc ? (
+                <span className="flex items-baseline gap-2">
+                  <span className="font-cormorant text-lg text-charcoal/40 line-through">
+                    ₹{disc.original.toLocaleString("en-IN")}
+                  </span>
+                  <span className="font-cormorant text-2xl text-rose font-semibold">
+                    ₹{disc.final.toLocaleString("en-IN")}
+                  </span>
+                </span>
+              ) : (
+                <span className="font-cormorant text-2xl text-gold">{service.price}</span>
+              );
+            })() : <span className="font-cormorant text-2xl text-gold">—</span>}
           </dd>
         </div>
       </dl>
@@ -321,8 +343,27 @@ function ConfettiDots() {
     </div>
   );
 }
+function computeDiscountedPrice(
+  priceStr: string,
+  campaign: BookingFlowProps["activeCampaign"]
+): { original: number; final: number; label: string } | null {
+  if (!campaign) return null;
+  const original = parseInt(String(priceStr).replace(/\D/g, "")) || 0;
+  if (!original) return null;
 
-export function BookingFlow({ salon }: BookingFlowProps) {
+  if (campaign.offer_type === "percentage_discount") {
+    const final = Math.round(original * (1 - campaign.discount_value / 100));
+    return { original, final, label: `${campaign.discount_value}% OFF` };
+  }
+  if (campaign.offer_type === "flat_discount") {
+    const final = Math.max(original - campaign.discount_value, 0);
+    return { original, final, label: `₹${campaign.discount_value} OFF` };
+  }
+  return null;
+}
+
+export function BookingFlow({ salon, activeCampaign }: BookingFlowProps) {
+  console.log("activeCampaign:", activeCampaign);
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [selectedService, setSelectedService] = useState<SalonService | null>(
@@ -459,7 +500,16 @@ export function BookingFlow({ salon }: BookingFlowProps) {
         service_id: selectedService.id,
         date: formatDateShort(selectedDate),
         time_slot: selectedTime,
-        total_amount: parseInt(String(selectedService.price).replace(/\D/g, "")) || 0,
+        total_amount: (() => {
+          const original = parseInt(String(selectedService.price).replace(/\D/g, "")) || 0;
+          if (!activeCampaign) return original;
+          if (activeCampaign.offer_type === "percentage_discount")
+            return Math.round(original * (1 - activeCampaign.discount_value / 100));
+          if (activeCampaign.offer_type === "flat_discount")
+            return Math.max(original - activeCampaign.discount_value, 0);
+          return original;
+        })(),
+
         status: "pending",
         staff_id: selectedStaff?.id ?? null,
         staff_name: selectedStaff?.name ?? null,
@@ -471,6 +521,12 @@ export function BookingFlow({ salon }: BookingFlowProps) {
         alert(`Error: ${error.message}`);
         setIsBooking(false);
         return;
+      }
+      if (activeCampaign) {
+        await supabase.rpc("increment_campaign_metric", {
+          campaign_id: activeCampaign.id,
+          metric: "bookings",
+        });
       }
 
       // Auto-save profile so the bride doesn't have to re-enter details next time
@@ -539,9 +595,26 @@ export function BookingFlow({ salon }: BookingFlowProps) {
                             </p>
                             <div className="mt-2 flex flex-wrap items-center gap-2">
                               <Badge variant="blush">{service.duration}</Badge>
-                              <span className="font-cormorant text-lg text-gold">
-                                {service.price}
-                              </span>
+                              {(() => {
+                                const disc = computeDiscountedPrice(service.price, activeCampaign);
+                                return disc ? (
+                                  <span className="flex items-baseline gap-1.5">
+                                    <span className="font-cormorant text-base text-charcoal/40 line-through">
+                                      ₹{disc.original.toLocaleString("en-IN")}
+                                    </span>
+                                    <span className="font-cormorant text-lg text-rose font-semibold">
+                                      ₹{disc.final.toLocaleString("en-IN")}
+                                    </span>
+                                    <span className="rounded-full bg-rose/10 px-1.5 py-0.5 font-dm-sans text-[10px] font-semibold text-rose">
+                                      {disc.label}
+                                    </span>
+                                  </span>
+                                ) : (
+                                  <span className="font-cormorant text-lg text-gold">
+                                    {service.price}
+                                  </span>
+                                );
+                              })()}
                             </div>
                           </div>
                           {isSelected && (
@@ -639,6 +712,7 @@ export function BookingFlow({ salon }: BookingFlowProps) {
                   date={selectedDate}
                   time={selectedTime}
                   staff={selectedStaff}
+                  activeCampaign={activeCampaign}
                 />
               </div>
             </div>
@@ -732,10 +806,28 @@ export function BookingFlow({ salon }: BookingFlowProps) {
                 )}
                 <div className="flex items-end justify-between gap-4 border-t border-gold/20 pt-4">
                   <span className="text-charcoal/60">Total</span>
-                  <span className="font-cormorant text-3xl text-gold">
-                    {selectedService?.price}
+                  <span>
+                    {selectedService ? (() => {
+                      const disc = computeDiscountedPrice(selectedService.price, activeCampaign);
+                      return disc ? (
+                        <span className="flex items-baseline gap-2">
+                          <span className="font-cormorant text-lg text-charcoal/40 line-through">
+                            ₹{disc.original.toLocaleString("en-IN")}
+                          </span>
+                          <span className="font-cormorant text-3xl text-rose font-semibold">
+                            ₹{disc.final.toLocaleString("en-IN")}
+                          </span>
+                        </span>
+                      ) : (
+                        <span className="font-cormorant text-3xl text-gold">{selectedService.price}</span>
+                      );
+                    })() : (
+                      <span className="font-cormorant text-3xl text-gold">—</span>
+                    )}
                   </span>
                 </div>
+
+
                 <p className="pt-2 font-dm-sans text-xs text-charcoal/50">
                   Booking ID: {bookingId}
                 </p>
