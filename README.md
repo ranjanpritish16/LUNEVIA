@@ -14,7 +14,7 @@ LUNÉVIA connects Delhi brides with verified makeup artists, hairstylists, and b
 - [Installation Guide](#-installation-guide)
 - [File Structure](#-file-structure)
 - [Design System](#-design-system)
-- [Known Limitations & Roadmap](#️-known-limitations--roadmap)
+- [Known Limitations & Future Implementations](#️-known-limitations--future-implementations)
 
 ---
 
@@ -269,15 +269,16 @@ lib/
 
 ---
 
-## ⚠️ Known Limitations & Roadmap
+## ⚠️ Known Limitations & Future Implementations
 
 **Limitations**
-- Email/password auth only — Google & GitHub OAuth not yet implemented
+- Email/password auth only — Google OAuth not yet implemented
 - Combo Package and Free Add-on campaigns exist in the schema but have no pricing logic in checkout yet (UI-only, marked "Coming Soon")
 - No booking rescheduling or trial-run scheduling yet
 
-**Roadmap**
+**Future Implementations**
 - Bundle/combo pricing support in checkout
+- Staff-specific portal — a dedicated page for each salon team member to view only their own assigned bookings and stay updated in real time
 - AI review summarizer on salon pages
 - Mehendi style matcher
 - Saved salons side-by-side comparison
