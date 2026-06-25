@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { X, ZoomIn, ZoomOut, Star } from "lucide-react";
+import { useRef } from "react";
 
 export default function SalonPage() {
   const { slug } = useParams();
@@ -19,7 +20,7 @@ export default function SalonPage() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [zoomLevel, setZoomLevel] = useState(1);
   const [activeCampaign, setActiveCampaign] = useState<any>(null);
-
+  const viewTrackedRef = useRef(false);
 
   useEffect(() => {
     async function load() {
@@ -52,6 +53,16 @@ export default function SalonPage() {
           .limit(1)
           .maybeSingle();
         setActiveCampaign(campaignData);
+        if (campaignData && !viewTrackedRef.current) {
+          viewTrackedRef.current = true;
+          supabase.rpc("increment_campaign_metric", {
+            campaign_id: campaignData.id,
+            metric: "views",
+          }).then(({ error }) => {
+            if (error) console.error("View tracking failed:", error);
+            else console.log("View tracked successfully for:", campaignData.id);
+          });
+        }
       }
 
 
@@ -178,7 +189,20 @@ export default function SalonPage() {
           </div>
           <a
             href={`/book/${salon.slug}`}
-            className="rounded-full bg-gold px-8 py-3 font-dm-sans text-sm font-medium text-white shadow-md hover:bg-gold/90 transition-colors shrink-0 text-center"
+            onClick={(e) => {
+              if (activeCampaign) {
+                e.preventDefault();
+                Promise.resolve(
+                  supabase.rpc("increment_campaign_metric", {
+                    campaign_id: activeCampaign.id,
+                    metric: "clicks",
+                  })
+                ).finally(() => {
+                  window.location.href = `/book/${salon.slug}`;
+                });
+              }
+            }}
+            className="shrink-0 rounded-full bg-rose px-6 py-2 font-dm-sans text-sm font-medium text-white hover:bg-rose/90 transition-colors text-center"
           >
             Book Now
           </a>
@@ -217,10 +241,22 @@ export default function SalonPage() {
             </div>
             <a
               href={`/book/${salon.slug}`}
+              onClick={(e) => {
+                if (activeCampaign) {
+                  e.preventDefault();
+                  Promise.resolve(
+                    supabase.rpc("increment_campaign_metric", {
+                      campaign_id: activeCampaign.id,
+                      metric: "clicks",
+                    })
+                  ).finally(() => {
+                    window.location.href = `/book/${salon.slug}`;
+                  });
+                }
+              }}
               className="shrink-0 rounded-full bg-rose px-6 py-2 font-dm-sans text-sm font-medium text-white hover:bg-rose/90 transition-colors text-center"
             >
-
-              Book & Save
+              Book Now
             </a>
 
           </div>
