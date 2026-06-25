@@ -59,7 +59,7 @@ function CustomerLoginContent() {
         email,
         password,
         options: {
-          emailRedirectTo: typeof window !== "undefined" ? window.location.origin : undefined,
+          emailRedirectTo: typeof window !== "undefined" ? `${window.location.origin}/reset-password` : undefined,
         },
       });
       if (error) {
