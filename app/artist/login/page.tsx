@@ -66,7 +66,7 @@ function ArtistLoginContent() {
       }
     } else if (mode === "forgot") {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: typeof window !== "undefined" ? `${window.location.origin}/artist/login` : undefined,
+        redirectTo: typeof window !== "undefined" ? `${window.location.origin}/reset-password` : undefined,
       });
       if (error) {
         setMessage({ type: "error", text: error.message });

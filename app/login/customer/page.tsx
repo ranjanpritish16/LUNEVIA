@@ -69,11 +69,16 @@ function CustomerLoginContent() {
         if (data.user) {
           await supabase.from("profiles").upsert({ id: data.user.id, role: "customer" });
         }
-        setMessage({ type: "success", text: "Account created! Check your email to verify your address." });
+        setMessage({
+          type: "success",
+          text: "Account created! Go back to the sign-in page and log in with this email and password.",
+        });
+        setMode("signin");
+        setPassword("");
       }
     } else if (mode === "forgot") {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: typeof window !== "undefined" ? `${window.location.origin}/login/customer` : undefined,
+        redirectTo: typeof window !== "undefined" ? `${window.location.origin}/reset-password` : undefined,
       });
       if (error) {
         setMessage({ type: "error", text: error.message });
