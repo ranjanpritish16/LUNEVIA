@@ -84,7 +84,7 @@ export function ExplorePage({
     }
 
     if (locations.length > 0) {
-      result = result.filter((s) => locations.includes(s.location_area));
+      result = result.filter((s) => locations.includes(s.locality));
     }
 
     if (sortBy === "top-rated") result.sort((a, b) => b.rating - a.rating);

@@ -10,8 +10,13 @@ export const SPECIALTY_FILTERS = [
 export const LOCATION_FILTERS = [
   "Lajpat Nagar",
   "Hauz Khas",
-  "South Extension",
+  "South Ex",
   "Vasant Kunj",
   "Greater Kailash",
   "Saket",
+  "Punjabi Bagh",
+  "Karol Bagh",
+  "Rohini",
+  "Dwarka",
+
 ] as const;

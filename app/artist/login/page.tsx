@@ -62,7 +62,7 @@ function ArtistLoginContent() {
         if (data.user) {
           await supabase.from("profiles").upsert({ id: data.user.id, role: "artist" });
         }
-        setMessage({ type: "success", text: "Account created! Check your email to verify your address." });
+        setMessage({ type: "success", text: "Account created , you can go back to Sign in page" });
       }
     } else if (mode === "forgot") {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
