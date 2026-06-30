@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">LUNEVIA</string>
+    <string name="title_activity_main">LUNEVIA</string>
+    <string name="package_name">com.lunevia.app</string>
+    <string name="custom_url_scheme">com.lunevia.app</string>
+</resources>

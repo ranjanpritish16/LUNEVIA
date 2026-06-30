@@ -1,0 +1,12 @@
+{
+    "appId": "com.lunevia.app",
+    "appName": "LUNEVIA",
+    "webDir": "public",
+    "server": {
+        "url": "https://luneviaa.vercel.app",
+        "cleartext": true
+    },
+    "android": {
+        "zoomEnabled": false
+    }
+}
